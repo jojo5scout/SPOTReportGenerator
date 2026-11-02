@@ -23,6 +23,41 @@ dev = [
 requires = ["uv_build>=0.13.6,<0.14.0"]
 build-backend = "uv_build"
 
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+# Apply exclusions also to paths passed explicitly (editors, hooks).
+force-exclude = true
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "PTH",  # prefer pathlib
+    "PT",   # pytest style
+    "ANN",  # type hints everywhere
+    "FA",   # from __future__ import annotations
+    "RUF",  # ruff-specific rules
+]
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.format]
+# ruff also formats Python code blocks in Markdown. The sketches in docs/ are
+# illustrations with aligned comments, not code, so leave them as written.
+exclude = ["docs/**"]
+
 [tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+xfail_strict = true
 # Repository root on sys.path so tests can import the hook scripts in tools/.
 pythonpath = ["."]
