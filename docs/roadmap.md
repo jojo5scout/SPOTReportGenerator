@@ -53,8 +53,7 @@ done.
 
 ### R07 Questionnaire spec
 - `questionnaire/specs/2026.1.yaml`: for every item its column code, answer codes,
-  scale range and the score it belongs to. No item texts. Optional alias mapping for
-  codes that would reveal an aliased instrument (architecture §3).
+  scale range and the score it belongs to. No item texts.
 - `spec.py` loads a spec by version and gives typed access
   (e.g. `spec.scale("PHQ9").columns`).
 - **Done when:** all column codes used by the previous program are covered; a test
@@ -98,7 +97,9 @@ done.
 ### R13 Legacy parity baseline
 - Run the previous program locally (path in `CLAUDE.local.md`) on every fixture and
   store its data-derived numbers as `tests/fixtures/expected/<dataset>.json`. No
-  reference values from literature.
+  reference values from literature. Keys that contain the real name of an aliased
+  instrument (the previous program uses it in variable names) are renamed to the
+  alias.
 - **Done when:** the expected files exist and a helper loads them in tests.
 
 ### R14 – R21 Domain metrics (one task each)

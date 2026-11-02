@@ -15,12 +15,15 @@ seems to require it; stop and ask instead.
 
 - **No real survey data in the repository.** Only synthetic datasets in
   `tests/fixtures/`. Never copy files from `content/`, `out/`, `data/`, the archive or
-  any path outside the repository into tracked files.
+  any path outside the repository into tracked files. Single exception: synthetic
+  datasets from the folder named in `CLAUDE.local.md` may be copied into
+  `tests/fixtures/` after checking that they contain codes only.
 - **No item texts of any questionnaire** in tracked files. Questionnaire specs hold
   codes and scoring rules only. Labels and texts belong in the content pack.
 - **Some instruments are referred to only by neutral aliases** (`RES`, `STIG`)
   everywhere in tracked files (code, comments, tests, docs, commit messages). The
-  mapping to real names is in `CLAUDE.local.md`. Never write the real name,
+  mapping to real names is in `CLAUDE.local.md`; the forbidden terms are in the
+  untracked `.denylist.txt`, which the pre-commit hooks check. Never write the real name,
   abbreviation, items or published reference values of an aliased instrument. PHQ-9,
   GAD-7 and the School Burnout Inventory (SBI) may be named normally.
 - **No secrets** (passwords, tokens, server paths) in tracked files.

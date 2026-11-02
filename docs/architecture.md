@@ -141,10 +141,6 @@ Rules for the responses file:
   call (headings `code`, responses `short`), and XLSX with the same structure (used by
   the existing synthetic datasets).
 
-If a question code ever contains a name from the local denylist of instrument names
-(section 8), the questionnaire spec maps it to an alias during ingest, so the real name
-never appears in tracked files or messages.
-
 For local development, `spot-report build` also accepts a single responses file plus
 `--school`, `--wave`, `--fieldwork-end` and `--questionnaire-version` options instead of
 a bundle.
@@ -245,6 +241,7 @@ SPOTReportGenerator/
 │       ├── base.py                 # ReportDefinition
 │       ├── initial.py
 │       └── followup.py
+├── tools/                          # repository tooling (data guard, name check hooks)
 ├── templates/                      # PUBLIC: layout, macros, CSS design system, fonts
 ├── examples/content-demo/          # PUBLIC: demo content pack with placeholder texts
 ├── tests/
@@ -410,7 +407,10 @@ Some instruments are referred to inside this repository only by neutral aliases:
 | `STIG` | stigma questionnaire |
 
 Their real names, item texts and reference values appear only in the private content
-pack; the mapping is kept in the untracked `CLAUDE.local.md`. All other instruments
+pack; the mapping is kept in the untracked `CLAUDE.local.md`, the forbidden terms in the
+untracked `.denylist.txt`. Pre-commit hooks reject these terms in tracked files and in
+commit messages. The column codes of the current questionnaire do not contain them; if a
+future questionnaire version did, the codes would have to be renamed in LimeSurvey. All other instruments
 (PHQ-9, GAD-7, School Burnout Inventory / SBI) may be named normally. No item texts of
 any instrument are stored in this repository; questionnaire specs contain codes and
 scoring rules only.
