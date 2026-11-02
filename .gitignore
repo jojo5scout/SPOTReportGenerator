@@ -1,6 +1,7 @@
 # Local Claude Code context (paths, licensed scale name)
 CLAUDE.local.md
 .claude/settings.local.json
+.denylist.txt
 
 # Private content pack, outputs, real data
 content/
