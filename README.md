@@ -23,6 +23,17 @@ uv run spot-report --help
 uv run pytest
 ```
 
+Before the first commit, install the Git hooks:
+
+```bash
+uv run pre-commit install
+```
+
+The hooks reject data files outside `tests/fixtures/` and `examples/content-demo/`, and
+reject files and commit messages containing terms from a local, untracked
+`.denylist.txt` (one term per line). Commits fail while that file is missing; ask a
+maintainer for its contents.
+
 ## Data and content
 
 This repository contains no real survey data and no questionnaire texts. Tests use

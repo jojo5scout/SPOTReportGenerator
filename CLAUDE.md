@@ -55,6 +55,7 @@ seems to require it; stop and ask instead.
 
 ```bash
 uv sync                          # install dependencies
+uv run pre-commit install        # git hooks: data guard, name check
 uv run pytest                    # all tests
 uv run pytest tests/metrics -q   # one area
 uv run ruff check . --fix        # lint
