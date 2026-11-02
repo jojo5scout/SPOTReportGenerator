@@ -15,11 +15,24 @@ data/
 !tests/fixtures/**/*.xlsx
 !tests/fixtures/**/*.csv
 !examples/content-demo/**/*.csv
+*.sav
+*.lss
+*.lsa
+*.lsr
 
-# Databases
+# Archive of input bundles (SPOT_ARCHIVE_DIR, if placed inside the checkout)
+archive/
+
+# Databases (snapshot store) and their journal files
 *.sqlite
 *.sqlite3
 *.db
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db-journal
+*.db-wal
+*.db-shm
 
 # Secrets
 .env

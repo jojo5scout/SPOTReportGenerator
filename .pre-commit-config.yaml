@@ -1,0 +1,24 @@
+# Install once per clone: uv run pre-commit install
+# The name checks need the untracked .denylist.txt; CI skips them
+# (SKIP=name-check,name-check-msg).
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: local
+    hooks:
+      - id: data-guard
+        name: data guard (no data files outside tests/fixtures/)
+        entry: python tools/data_guard.py
+        language: python
+        stages: [pre-commit]
+      - id: name-check
+        name: name check (denylisted terms in files)
+        entry: python tools/name_check.py
+        language: python
+        stages: [pre-commit]
+        require_serial: true
+      - id: name-check-msg
+        name: name check (denylisted terms in commit message)
+        entry: python tools/name_check.py --commit-msg
+        language: python
+        stages: [commit-msg]
