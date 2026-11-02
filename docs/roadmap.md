@@ -1,210 +1,283 @@
 # Roadmap
 
-Milestones are worked on in order. Each item below is meant to become one GitHub issue
-and one pull request. Acceptance criteria are the definition of done.
-
-Legend: **[M]** = milestone, **#n** = suggested issue number.
+Milestones are worked on in order. Each task has a roadmap id (`R01`, `R02`, …). When a
+task becomes a GitHub issue, the issue title starts with its roadmap id; GitHub's own
+issue numbers are independent of these ids. Acceptance criteria are the definition of
+done.
 
 ---
 
-## [M0] Foundation
+## M0 Foundation
 
-### #1 Repository skeleton
+### R01 Repository skeleton
 - `pyproject.toml` (uv, Python 3.12, package `spot_report` under `src/`, console script
-  `spot-report`), `README.md`, `LICENSE` (AGPL-3.0), `CLAUDE.md`, `docs/`.
+  `spot-report`), `README.md`, `LICENSE` (AGPL-3.0).
 - **Done when:** `uv sync` works on a fresh clone; `uv run spot-report --help` prints
   usage.
 
-### #2 Ignore rules and data guard
-- `.gitignore` covering `content/`, `out/`, `data/`, `*.sqlite`, `.venv/`,
-  `CLAUDE.local.md`, and data files (`*.xlsx`, `*.xls`, `*.csv`, `*.json` outside
-  allowed folders).
-- pre-commit hook that rejects data files outside `tests/fixtures/` and
-  `examples/content-demo/`, plus a check that no name from a local denylist
-  (untracked file, so the names themselves are never committed) appears in tracked
-  files.
+### R02 Ignore rules and data guard
+- Extend `.gitignore` (archive directory, SQLite files). JSON files are **not** ignored
+  globally, because fixtures and manifests are legitimate JSON.
+- Data guard script: rejects data files (`*.xlsx`, `*.xls`, `*.csv`, `*.sqlite`, …)
+  outside `tests/fixtures/` and `examples/content-demo/`. Runs as a pre-commit hook.
+- Name check (pre-commit only): rejects tracked files containing a name from a local,
+  untracked denylist, so the names themselves are never committed.
 - **Done when:** committing a dummy `.xlsx` in `src/` is rejected; committing a fixture
-  in `tests/fixtures/` is allowed.
+  in `tests/fixtures/` is allowed; a denylisted word in a file is rejected.
 
-### #3 Lint, format and tests
+### R03 Lint, format and tests
 - ruff (lint + format) and pytest configured in `pyproject.toml`; one trivial test.
 - **Done when:** `uv run ruff check .` and `uv run pytest` pass.
 
-### #4 Continuous integration
-- GitHub Actions workflow: install uv and Pango, run ruff and pytest on every push and
-  pull request.
-- **Done when:** a pull request shows green checks.
+### R04 Continuous integration
+- GitHub Actions workflow: install uv and Pango, run ruff, the data guard (without the
+  local name check) and pytest on every push and pull request.
+- **Done when:** a pull request shows green checks; a pull request adding a data file
+  in `src/` fails.
 
-### #5 Contribution basics
+### R05 Contribution basics
 - Issue templates (bug, feature), pull request template with checklist (tests, docs,
-  privacy rules), `CONTRIBUTING.md` summarising the conventions from `CLAUDE.md`.
+  hard rules), `CONTRIBUTING.md` summarising the conventions from `CLAUDE.md`.
 - **Done when:** templates appear when opening an issue or pull request.
 
 ---
 
-## [M1] Ingest and validation
+## M1 Ingest and validation
 
-### #6 Synthetic fixtures
-- Add a selection of the existing synthetic datasets to `tests/fixtures/` (code headings
-  and answer codes only; check that no question texts are contained).
+### R06 Synthetic fixtures
+- Add a selection of the existing synthetic datasets (path in `CLAUDE.local.md`) to
+  `tests/fixtures/`. Check that headings are question codes and that no question or
+  answer texts are contained.
 - `tests/fixtures/README.md` describes each dataset and what it is meant to test.
 - **Done when:** fixtures are committed and a test loads each of them.
 
-### #7 Questionnaire spec
-- `questionnaire.yaml`: for every item its column code, answer codes, scale range and
-  which score it belongs to; versioned (`2026.1`). No item texts.
-- `spec.py` gives typed access (e.g. `spec.scale("PHQ9").columns`).
+### R07 Questionnaire spec
+- `questionnaire/specs/2026.1.yaml`: for every item its column code, answer codes,
+  scale range and the score it belongs to. No item texts. Optional alias mapping for
+  codes that would reveal an aliased instrument (architecture §3).
+- `spec.py` loads a spec by version and gives typed access
+  (e.g. `spec.scale("PHQ9").columns`).
 - **Done when:** all column codes used by the previous program are covered; a test
   checks the spec against every fixture.
 
-### #8 Manifest and readers
-- Manifest model (schema version 1, see architecture §3) with validation.
+### R08 Manifest and readers
+- Manifest model (schema version 1, architecture §3) with validation; `fieldwork_end`
+  required; optional `responses.counts`.
 - Readers for LimeSurvey CSV (`code`/`short`) and XLSX, both returning the same
-  normalised DataFrame (string codes stripped, numeric scales as numbers, empty → NA).
-- **Done when:** the same dataset as CSV and XLSX produces identical DataFrames in a
-  test.
+  normalised DataFrame (codes stripped, numeric scales as numbers, empty → NA).
+- **Done when:** the same dataset as CSV and XLSX produces identical DataFrames.
 
-### #9 Validation
+### R09 Validation
 - Checks: required columns present, answer codes within the allowed set, numeric values
-  within range, duplicate response ids. Returns structured findings (error / warning).
-- `spot-report validate <bundle>` prints the findings and sets the exit code.
+  within range, duplicate response ids. Findings contain column code, rule and count,
+  never response values or row contents.
+- `spot-report validate <bundle>` prints the findings; exit code 3 on errors.
 - **Done when:** a fixture with injected errors produces the expected findings.
+
+### R10 Bundle archive
+- Successful runs copy the bundle to `SPOT_ARCHIVE_DIR/<school>/<wave>/`.
+- **Done when:** a test run produces the archive copy; nothing is written inside the
+  repository.
 
 ---
 
-## [M2] Metrics
+## M2 Metrics
 
-### #10 Metric types and registry
-- `Proportion`, `Summary`, `Distribution` (architecture §6.1), JSON round trip,
-  `MetricSet`, registry with metadata per metric id.
-- **Done when:** round-trip tests pass for every type.
+### R11 Metric types and registry
+- `Proportion`, `Summary`, `Distribution` with `n_missing` (architecture §6.1), JSON
+  round trip, `MetricSet`, registry with metadata per id, id pattern validation.
+- Fixed conventions: SD `ddof=1`, NumPy/pandas default quantiles.
+- **Done when:** round-trip tests pass for every type; invalid ids are rejected.
 
-### #11 Derived features
-- Per-person table: PHQ-9 and GAD-7 sum scores and severity buckets, cut-off flags,
-  "burdened" flag, diagnosis yes/no, any treatment, RES sum score, burnout subscale
-  sums. Missing-data rules documented in docstrings.
+### R12 Derived features
+- `features.py`: PHQ-9 and GAD-7 sum scores and severity buckets, cut-off flags,
+  "burdened" flag, diagnosis yes/no, any treatment, RES sum score, SBI subscale sums.
+  Missing-data rules documented in docstrings.
 - **Done when:** unit tests cover edge cases (all items missing, some items missing).
 
-### #12 Legacy parity baseline
-- Run the previous program locally on every fixture and store its numbers as
-  `tests/fixtures/expected/<dataset>.json` (numbers only).
+### R13 Legacy parity baseline
+- Run the previous program locally (path in `CLAUDE.local.md`) on every fixture and
+  store its data-derived numbers as `tests/fixtures/expected/<dataset>.json`. No
+  reference values from literature.
 - **Done when:** the expected files exist and a helper loads them in tests.
 
-### #13 – #20 Domain metrics (one issue each)
-- #13 demography · #14 diagnoses, help sources and treatment (incl. pattern counts for
-  the help-source chart) · #15 absences · #16 symptoms (PHQ-9, GAD-7, combined,
-  item 9, impairment) · #17 association (symptoms × diagnosis, by school level) ·
-  #18 stigma · #19 burnout · #20 resilience (RES)
+### R14 – R21 Domain metrics (one task each)
+- R14 demography · R15 diagnoses, help sources and treatment (incl. pattern counts for
+  the help-source chart) · R16 absences · R17 symptoms (PHQ-9, GAD-7, combined, item 9,
+  impairment) · R18 association (symptoms × diagnosis, by school level) · R19 stigma
+  (STIG) · R20 burnout (SBI) · R21 resilience (RES)
 - **Done when (each):** unit tests pass and the legacy parity test for that domain
   passes, or every deviation is documented as an intentional fix in the pull request.
 
 ---
 
-## [M3] Snapshot store
+## M3 Snapshot store
 
-### #21 SQLite store
+### R22 SQLite store
 - Schema from architecture §6.4, `save_snapshot`, `load_snapshot`,
-  `list_waves(school)`, upsert behaviour, schema version table for future migrations.
+  `list_waves(school)` ordered by `fieldwork_end`, upsert behaviour, schema version table
+  for future migrations.
 - **Done when:** save → load round trip is lossless; running twice for the same wave
-  keeps one snapshot.
+  keeps one snapshot; wave order is by `fieldwork_end`.
 
-### #22 Snapshot CLI
+### R23 Snapshot CLI
 - `spot-report snapshot list` and `spot-report snapshot export`.
 - **Done when:** export of a stored fixture snapshot produces readable JSON.
 
 ---
 
-## [M4] Presentation and rendering foundation
+## M4 Presentation and rendering foundation
 
-### #23 Design tokens and CSS design system
+### R24 Design tokens and CSS design system
 - `templates/design.toml`, base CSS (typography, colours, tables, figures), `@page`
   rules (A4, margins, page numbers, running header), bundled open-licence font.
-- **Done when:** a test page with all elements renders to PDF and looks consistent.
+- **Done when:** a test page with headings, body text, a table, a figure and a
+  key-figure box renders without WeasyPrint warnings; fonts are embedded in the PDF;
+  Johannes has approved the test page in the pull request.
 
-### #24 Jinja environment, filters and macros
-- Loader with content-pack-first lookup, filters (`pct`, `number`, `delta`), macros
-  (table, figure with automatic numbering, key-figure box, stacked percentage bar).
-- **Done when:** filters have unit tests; macros render in the test page.
+### R25 Formatting, Jinja environment and macros
+- `present/formatting.py` (shared by filters and charts; configurable decimal separator,
+  half-up rounding via `Decimal`), Jinja loader with content-pack-first lookup, filters
+  (`pct`, `number`, `delta`), macros (table, figure with automatic numbering, key-figure
+  box, stacked percentage bar).
+- **Done when:** formatting functions have unit tests including rounding edge cases
+  (`0.5`, `2.5`); macros render in the test page.
 
-### #25 Privacy layer
-- `present/privacy.py` with `min_group_size` from config; suppressed values render as a
-  defined placeholder with a footnote; report generation stops below the threshold for
-  the whole school.
-- **Done when:** tests cover suppressed and non-suppressed cases.
+### R26 Privacy layer
+- `present/privacy.py` implementing exactly the rules of architecture §9: minimum group
+  size 10 for subgroups (configuration rejects lower values), no report below 10
+  answers for the whole school (exit code 4).
+- **Done when:** tests cover shown and hidden subgroups and the whole-school threshold.
 
-### #26 Chart style and first charts
-- Shared matplotlib style from design tokens, SVG export; port the age bar chart and the
-  PHQ-9 severity chart.
-- **Done when:** charts render inside the test page with matching fonts and colours.
+### R27 Chart style and first charts
+- Shared matplotlib style from design tokens via `rc_context`, SVG export with fixed
+  `svg.hashsalt`; port the age bar chart and the PHQ-9 severity chart.
+- **Done when:** charts render inside the test page with matching fonts and colours;
+  the same input produces byte-identical SVGs.
 
-### #27 PDF pipeline and demo content pack
+### R28 PDF pipeline and demo content pack
 - `render/pdf.py`, `examples/content-demo/` with one placeholder section,
-  `spot-report build` end to end.
+  `spot-report build` end to end, exit codes and `result.json` as in architecture §11.
 - **Done when:** CI renders the demo report from a fixture without warnings.
 
 ---
 
-## [M5] Initial report
+## M5 Initial report
 
-### #28 Report definition and structure
+### R29 Report definition and structure
 - `reports/initial.py`: section list, title page, table of contents, methods section.
 
-### #29 – #36 Sections (one issue each, same order as M2)
+### R30 – R37 Sections (one task each, same order as M2)
 - Each section: content-pack template, context building, charts, demo placeholder.
+  Charts as in the previous report (including the burnout/resilience scatter plot).
 - **Done when (each):** the section renders with real content locally and with
   placeholder content in CI.
 
-### #37 Design pass
+### R38 Design pass
 - Review of the complete report: spacing, page breaks, table and figure placement.
-- **Done when:** the report has been reviewed against the previous Word report and
-  approved.
+- **Done when:** the report has been compared with the previous Word report and
+  approved by Johannes.
 
 ---
 
-## [M6] Appendices
+## M6 References appendix
 
-### #38 Free-text appendix
-- Separate PDF with the free-text answers (cleaned, ordered), clear header that it
-  contains unedited student statements.
-
-### #39 References appendix
+### R39 References appendix
 - Generated from `references.yaml` in the content pack; reference values used in the
   report are cited automatically.
+- **Done when:** every reference value shown in the report has an entry in the appendix.
 
 ---
 
-## [M7] Production on the server
+## M7 Production on the server
 
-### #40 Input bundle contract with the cron script
-- Final manifest fields; adapt the existing cron script to write bundles and call
-  `spot-report build`; exit codes handled.
+The automation script lives in its own repository (architecture §2.1). Tasks R40–R42
+are carried out there, not in this repository. The old Word-based generator stays in
+use until the new report has been approved (R38).
 
-### #41 Server installation
-- Installation guide (uv, Pango, fonts), configuration via environment variables, log
-  location, store location, backup of the SQLite file.
-- **Done when:** a report for a test survey is produced on the server by the cron job.
+### R40 Automation script under version control
+- Put `spot_automation.py` into its own private repository. Move hard-coded e-mail
+  addresses and paths into the existing secrets/env files.
+- **Done when:** the script runs unchanged on the server from the repository checkout.
+
+### R41 Survey registry and bundle creation
+- `surveys.yaml` registry (architecture §2.2) with a validation on load.
+- Export as CSV instead of XLS; write an input bundle with `manifest.json` (school and
+  wave from the registry, fieldwork dates from `startdate`/`expires`, counts from
+  `get_summary`).
+- Expired survey without registry entry: one error e-mail, then skipped silently
+  (state flag), no daily repetition.
+- **Done when:** for a registered test survey (`TEST_SID`), the script writes a bundle
+  that `spot-report validate` accepts.
+
+### R42 Calling the new generator
+- Call `spot-report build <bundle> --out <dir>`; read `result.json`.
+- Retry only the LimeSurvey export, not the generator; exit codes 3 and 4 are final and
+  produce an error e-mail with the message from `result.json`.
+- Attach the PDF with MIME type `application/pdf`.
+- Switch between old and new generator with one setting, so the old one can stay
+  active until R38 is approved.
+- **Done when:** a test survey produces a PDF e-mail via the new generator; switching
+  back to the old generator works.
+
+### R43 Script robustness
+- Timestamps on every log line.
+- Top-level error handling: connection failures (e.g. DNS errors) produce a log entry
+  and one error e-mail instead of an unhandled traceback.
+- Optional `FORCE_SID=<id>` to regenerate the report of one survey on purpose.
+- **Done when:** a simulated connection failure is logged with timestamp and reported.
+
+### R44 Server installation of the generator
+- Install this program at a path without spaces with uv; Pango and fonts; environment variables
+  for content pack, store and archive; locations of log, store and archive; backup of
+  the SQLite file and the archive.
+- **Done when:** the cron job produces a report for a registered test survey on the
+  server with the new generator.
 
 ---
 
-## [M8] Follow-up report
+## M8 Follow-up report
 
 Starts once the content of the follow-up report has been defined with SPOT.
 
-### #42 Content definition (document, not code)
+### R45 Content definition (document, not code)
 - Which comparisons, which wording, how to handle new or changed questions.
 
-### #43 Comparison engine
-- `compare/`: differences between waves for every comparable metric, statistical
-  assessment (method decided in an ADR), handling of missing metrics.
+### R46 Comparison engine
+- `compare/`: differences between a wave and its predecessor for every comparable
+  metric, statistical assessment (method decided in an ADR), handling of missing
+  metrics, warning on suspected school-id changes.
 
-### #44 Follow-up report definition and sections
+### R47 Follow-up report definition and sections
 - `reports/followup.py` and content-pack templates.
+
+---
+
+## M9 Response quality checks
+
+Last milestone. Design requirements in architecture §4.1.
+
+### R48 Rule definition (document, not code)
+- Which patterns count as implausible (e.g. straight-lining across scales,
+  contradictory answers, implausible demographic combinations), agreed with SPOT.
+
+### R49 Quality stage
+- `quality/` with a versioned rule set; flagged responses excluded from all metrics;
+  rule-set version stored with the wave; number of exclusions in the methods section.
+- **Done when:** fixtures with injected implausible responses are excluded as expected;
+  reports show the number of exclusions.
+
+### R50 Recompute
+- `spot-report recompute` rebuilds snapshots from archived bundles, e.g. after the
+  quality rules or metric definitions change.
 
 ---
 
 ## Later
 
+- Free-text answers: separate document, reviewed by a SPOT person before sending.
+  Not started until the procedure is decided.
 - AI summary of free-text answers (requires privacy assessment first).
-- `recompute` command for archived input bundles.
 - Trend charts over three or more waves.
 - Dashboard (separate project) reading the SQLite store.
+- Publish the automation script once it contains no server-specific configuration.

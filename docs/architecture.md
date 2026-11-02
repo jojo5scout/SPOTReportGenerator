@@ -1,8 +1,8 @@
 # Architecture
 
-This document describes how SPOT-SchoolReportGenerator is built and why. It is the
-reference for all implementation work. If code and this document disagree, either the
-code is wrong or this document must be updated in the same pull request.
+This document describes how SPOTReportGenerator is built and why. It is the reference
+for all implementation work. If code and this document disagree, either the code is
+wrong or this document must be updated in the same pull request.
 
 ## 1. Purpose and scope
 
@@ -23,29 +23,70 @@ structure, templates and texts.
 
 ### Out of scope
 
-- **Talking to LimeSurvey.** The program never calls the LimeSurvey API. An external
-  script on the server (run by cron) detects completed surveys, exports the responses
-  and calls this program with an input bundle (see section 3).
-- **Delivering reports** (e-mail, upload). The program writes files; delivery is
-  handled elsewhere.
+- **Talking to LimeSurvey.** The program never calls the LimeSurvey API. The
+  automation script on the server (section 2) detects finished surveys, exports the
+  responses and calls this program with an input bundle (section 3).
+- **Delivering reports.** The program writes files. The automation script e-mails the
+  finished report to SPOT; SPOT forwards it to the school.
+- **Free-text answers.** How free-text answers are passed on to schools is not decided
+  yet. Until then they are ignored by the program (section 14).
 - **The web dashboard.** It is a separate project that will read the same SQLite
   store (section 6).
 
 ## 2. System context
 
 ```
- LimeSurvey ──API──▶ cron script (not in this repo)
-                         │  writes input bundle, then calls:
+ LimeSurvey ──API──▶ automation script (cron, separate repository)
+                         │  reads survey registry, writes input bundle, then calls:
                          ▼
-              spot-report build <bundle>
+              spot-report build <bundle> --out <dir>
                          │
-        ┌────────────────┼──────────────────┐
-        ▼                ▼                  ▼
-   report PDF(s)   snapshot in SQLite   run log
+        ┌────────────┬───┴────────────┬────────────────┬─────────────┐
+        ▼            ▼                ▼                ▼             ▼
+   report PDF   result.json   snapshot in SQLite   archived bundle   run log
+                         │
+                         ▼
+        automation script e-mails the PDF to SPOT
 ```
 
 The program is a command-line tool. It runs on a developer laptop during development
 and on the SPOT server in production. It must behave identically in both places.
+
+### 2.1 The automation script
+
+`spot_automation.py` runs on the server via cron and lives in its own repository (it
+contains server-specific configuration). Its current behaviour:
+
+- Lists all surveys (`list_surveys`) and reads their status from `active`, `startdate`
+  and `expires` (`get_survey_properties`).
+- Processes a survey **once**, when its status is `expired` (end date reached) and no
+  report has been generated yet. Progress is kept in `evaluation_state.json`.
+- Exports complete responses with question codes and answer codes
+  (`export_responses`, headings `code`, responses `short`).
+- Calls the report generator, then e-mails the report to SPOT, and sends an error
+  e-mail on failure.
+- `TEST_SID=<id>` processes a single survey for testing.
+
+One LimeSurvey survey corresponds to exactly one school and one wave. The changes the
+script needs for this program are tracked in milestone M7 of the roadmap.
+
+### 2.2 Survey registry
+
+LimeSurvey does not know which school a survey belongs to. The automation script
+therefore reads a **survey registry**, a small file maintained by hand on the server
+whenever a new survey is set up:
+
+```yaml
+# surveys.yaml next to the automation script (not in any public repository)
+515973:
+  school_id: gym-example
+  school_name: Gymnasium Beispiel
+  wave: "2026"
+  questionnaire_version: "2026.1"
+```
+
+An expired survey without a registry entry is not processed; the script sends one error
+e-mail asking for the entry. Test surveys are simply not registered.
 
 ## 3. Input bundle
 
@@ -73,34 +114,66 @@ bundle/
 }
 ```
 
+Where the values come from:
+
+| Field | Source |
+|---|---|
+| `school.*`, `wave.label`, `survey.questionnaire_version` | survey registry (section 2.2) |
+| `wave.fieldwork_start`, `wave.fieldwork_end` | LimeSurvey survey properties `startdate` and `expires` (date part) |
+| `survey.limesurvey_id` | LimeSurvey survey id |
+| `responses.counts` (optional) | LimeSurvey `get_summary`: completed and incomplete responses, for the methods section |
+
+`fieldwork_end` is required: it defines the order of waves (section 7). Optional
+`responses.counts`:
+
+```json
+"responses": { "file": "responses.csv", "format": "csv",
+               "counts": { "completed": 287, "incomplete": 41 } }
+```
+
 Rules for the responses file:
 
 - Column headings are **question codes** (e.g. `PHQ9[PHQQ1]`), never question texts.
 - Cell values are **answer codes** (e.g. `0`–`3`, `M`, `Gym1`, `Y`), never answer texts.
-- Only complete responses are included, unless the manifest says otherwise.
+- The file contains **complete responses only**. Selecting them is the job of the cron
+  script (LimeSurvey export with completion status `complete`).
 - Supported formats: CSV as produced by the LimeSurvey RemoteControl `export_responses`
   call (headings `code`, responses `short`), and XLSX with the same structure (used by
   the existing synthetic datasets).
 
+If a question code ever contains a name from the local denylist of instrument names
+(section 8), the questionnaire spec maps it to an alias during ingest, so the real name
+never appears in tracked files or messages.
+
 For local development, `spot-report build` also accepts a single responses file plus
-`--school`, `--wave` and `--questionnaire-version` options instead of a bundle.
+`--school`, `--wave`, `--fieldwork-end` and `--questionnaire-version` options instead of
+a bundle.
+
+### Archive
+
+Every bundle that is processed successfully is copied to an archive directory outside
+the repository (`SPOT_ARCHIVE_DIR`), as `<school>/<wave>/`. The wave record in the
+store points to it. This makes it possible to recompute snapshots later when a metric
+definition changes. There is no retention limit for archived bundles.
 
 ## 4. Pipeline
 
 ```
-ingest ─▶ validate ─▶ features ─▶ metrics ─▶ store ─▶ compare ─▶ present ─▶ render
-                                                       (follow-up only)
+ingest ─▶ validate ─▶ (quality) ─▶ features ─▶ metrics ─▶ store ─▶ compare ─▶ present ─▶ render
+                       later                                       follow-up
+                                                                     only
 ```
 
 | Stage | Input | Output | Notes |
 |---|---|---|---|
-| ingest | bundle | `Dataset` (DataFrame + manifest) | No interpretation, only reading and type normalisation |
-| validate | `Dataset` | `Dataset` + list of findings | Checks columns and answer codes against the questionnaire spec |
+| ingest | bundle | `Dataset` (DataFrame + manifest) | Reading and type normalisation only |
+| validate | `Dataset` | `Dataset` + findings | Technical checks against the questionnaire spec |
+| quality | `Dataset` | `Dataset` + exclusion record | Plausibility checks on responses; planned for the end of the roadmap (section 4.1) |
 | features | `Dataset` | per-person derived table | Sum scores, severity buckets, "burdened" flag, … |
 | metrics | features + dataset | `MetricSet` | Aggregates only, **numbers only**, no formatting, no I/O |
 | store | `MetricSet` + wave meta | snapshot in SQLite | Upsert per (school, wave) |
-| compare | current + earlier snapshots | `Comparison` | Follow-up report only |
-| present | `MetricSet` (+ `Comparison`) | template context + SVG charts | Formatting, small-group suppression, charts |
+| compare | current + earlier snapshot | `Comparison` | Follow-up report only |
+| present | `MetricSet` (+ `Comparison`) | template context + SVG charts | Formatting, privacy rules, charts |
 | render | template context | HTML → PDF | Jinja2 + WeasyPrint |
 
 Each stage only depends on the stages to its left. In particular:
@@ -109,10 +182,26 @@ Each stage only depends on the stages to its left. In particular:
 - Charts are created only in `present`, never in `metrics`.
 - Only `render` knows about HTML and WeasyPrint.
 
+### 4.1 Response quality checks (planned)
+
+`validate` checks whether the data are technically correct (columns present, codes
+allowed). `quality` will check whether individual responses are plausible, e.g.
+identical answers across whole scales (straight-lining), contradictory answers, or
+implausible combinations of demographic answers. Flagged responses are excluded from
+all metrics.
+
+Requirements for when this stage is built:
+
+- Rules are defined in a versioned rule set; the version is stored with every wave so
+  that comparisons between waves can tell whether the same rules were applied.
+- The number of excluded responses (not which ones, not their values) is recorded and
+  shown in the methods section of the report.
+- Until the stage exists, no responses are excluded and the rule-set version is empty.
+
 ## 5. Package layout
 
 ```
-SPOT-SchoolReportGenerator/
+SPOTReportGenerator/
 ├── CLAUDE.md
 ├── LICENSE                         # AGPL-3.0
 ├── README.md
@@ -127,13 +216,16 @@ SPOT-SchoolReportGenerator/
 │   ├── ingest/
 │   │   ├── manifest.py             # manifest model + loading
 │   │   ├── readers.py              # csv / xlsx → DataFrame
-│   │   └── validate.py
+│   │   ├── validate.py
+│   │   └── archive.py
 │   ├── questionnaire/
-│   │   ├── spec.py                 # typed access to the questionnaire definition
-│   │   └── questionnaire.yaml      # codes and scales only, no item texts
+│   │   ├── spec.py                 # typed access to a questionnaire version
+│   │   └── specs/
+│   │       └── 2026.1.yaml         # codes and scoring rules only, no item texts
+│   ├── quality/                    # planned (section 4.1)
+│   ├── features.py                 # per-person derived variables
 │   ├── metrics/
 │   │   ├── types.py                # Proportion, Summary, Distribution, …
-│   │   ├── features.py             # per-person derived variables
 │   │   ├── registry.py             # metric ids + metadata
 │   │   └── <domain>.py             # demography, diagnoses, absences, symptoms,
 │   │                               # association, stigma, burnout, resilience
@@ -142,8 +234,8 @@ SPOT-SchoolReportGenerator/
 │   │   └── sqlite_store.py
 │   ├── compare/                    # follow-up comparisons
 │   ├── present/
-│   │   ├── formatting.py           # Jinja filters: pct, number, delta, …
-│   │   ├── privacy.py              # small-group suppression
+│   │   ├── formatting.py           # shared number formatting (filters + charts)
+│   │   ├── privacy.py              # minimum group size rule
 │   │   ├── context.py              # MetricSet → template context
 │   │   └── charts/                 # matplotlib → SVG, shared style
 │   ├── render/
@@ -157,6 +249,7 @@ SPOT-SchoolReportGenerator/
 ├── examples/content-demo/          # PUBLIC: demo content pack with placeholder texts
 ├── tests/
 │   ├── fixtures/                   # synthetic datasets only (code headings)
+│   │   └── expected/               # legacy parity numbers (data-derived only)
 │   └── …
 └── content/                        # PRIVATE content pack, gitignored (section 8)
 ```
@@ -166,21 +259,24 @@ SPOT-SchoolReportGenerator/
 ### 6.1 Metric types
 
 All metrics are immutable dataclasses holding raw numbers. Derived values (shares,
-percentages) are computed properties, never stored separately.
+percentages) are computed properties, never stored separately. Every type records how
+many answers were missing, so reports can show "n of N answered".
 
 ```python
 @dataclass(frozen=True)
 class Proportion:          # "k of n"
     k: int
     n: int                 # valid answers (denominator)
+    n_missing: int
 
 @dataclass(frozen=True)
 class Summary:             # numeric scale or score
     n: int
+    n_missing: int
     mean: float | None
-    sd: float | None
+    sd: float | None       # sample SD, ddof=1
     median: float | None
-    q1: float | None
+    q1: float | None       # quantiles: NumPy/pandas default ("linear")
     q3: float | None
     min: float | None
     max: float | None
@@ -189,23 +285,26 @@ class Summary:             # numeric scale or score
 class Distribution:        # counts per category, in a defined order
     categories: tuple[str, ...]
     counts: tuple[int, ...]
+    n_missing: int
 ```
 
-The set of types may grow (e.g. for multi-select patterns), but every type must be
-JSON-serialisable and must contain enough information for statistical comparison
-(counts and denominators, or mean, SD and n).
+Computation conventions are fixed here because legacy parity and comparisons between
+waves depend on them: standard deviation with `ddof=1`, quantiles with the NumPy/pandas
+default method. The set of types may grow (e.g. for multi-select patterns), but every
+type must be JSON-serialisable and must contain enough information for statistical
+comparison (counts and denominators, or mean, SD and n).
 
 ### 6.2 Metric ids
 
-Every metric has a stable dotted id, e.g.
+Pattern: `domain.instrument.measure[.subgroup]`, lowercase, `[a-z0-9_]` per segment.
 
 ```
 symptoms.phq9.severity              Distribution
 symptoms.phq9.cutoff10              Proportion
-symptoms.burdened                   Proportion
+symptoms.combined.burdened          Proportion
 resilience.res.total                Summary
 resilience.res.total.burdened       Summary
-association.burdened_by_diagnosis   Distribution
+stigma.stig.item1                   Summary
 ```
 
 Ids are part of the snapshot format. Renaming an id is a breaking change and needs a
@@ -216,7 +315,7 @@ questionnaire items it depends on, and since which questionnaire version it exis
 
 A `MetricSet` maps metric ids to metric values. A **snapshot** is a `MetricSet` plus
 wave metadata (school, wave label, fieldwork dates, questionnaire version, program
-version, metrics version).
+version, metrics version, quality rule-set version, archive path).
 
 ### 6.4 SQLite schema (draft)
 
@@ -231,11 +330,13 @@ CREATE TABLE wave (
     school_id             TEXT NOT NULL REFERENCES school(id),
     label                 TEXT NOT NULL,
     fieldwork_start       TEXT,
-    fieldwork_end         TEXT,
+    fieldwork_end         TEXT NOT NULL,
     limesurvey_id         INTEGER,
     questionnaire_version TEXT NOT NULL,
     program_version       TEXT NOT NULL,
     metrics_version       INTEGER NOT NULL,
+    quality_rules_version TEXT,
+    archive_path          TEXT,
     created_at            TEXT NOT NULL,
     UNIQUE (school_id, label)
 );
@@ -252,25 +353,25 @@ CREATE TABLE metric (
 Running the program again for the same school and wave replaces that wave's snapshot.
 `spot-report snapshot export` writes a snapshot as JSON for inspection.
 
-The store holds **unsuppressed** aggregates. Suppression is applied wherever data leaves
-the system (report, dashboard), see section 9.
-
 ## 7. Report types and selection
 
 A `ReportDefinition` lists the sections of a report, the template for each section and
 the metrics each section needs. `initial.py` and `followup.py` each define one.
 
-Report type selection (`--report-type auto|initial|followup`, default `auto`):
+Waves of a school are ordered by `fieldwork_end`. Report type selection
+(`--report-type auto|initial|followup`, default `auto`):
 
-- `auto` → `followup` if the store contains an earlier wave of the same school,
-  otherwise `initial`.
-- A follow-up report compares with the most recent earlier wave. Trend views over more
-  than two waves are added later.
+- `auto` → `followup` if the store contains a wave of the same school with an earlier
+  `fieldwork_end`, otherwise `initial`.
+- A follow-up report compares with the latest wave *before* the current one. Re-running
+  an old wave therefore compares it with its own predecessor, not with newer waves.
+- If `auto` selects `initial` but the store contains a school with the same name and a
+  different id, the program logs a warning (the school id may have changed).
 - If a metric is missing in the earlier wave (e.g. new question), the follow-up report
   shows it without comparison and says so.
 
 The content and the statistical method of the follow-up report are not decided yet
-(see section 12).
+(section 14).
 
 ## 8. Templates and content packs
 
@@ -301,46 +402,56 @@ content/
 
 ### Instrument aliases
 
-Some instruments used in the survey are referred to inside this repository only by
-neutral aliases, e.g. **RES** for the resilience scale (`resilience.res.*`). Their real
-names, item texts and reference values appear only in the private content pack. No item texts of any instrument are stored in this
-repository; `questionnaire.yaml` contains codes and scoring rules only.
+Some instruments are referred to inside this repository only by neutral aliases:
+
+| Alias | Instrument |
+|---|---|
+| `RES` | resilience scale |
+| `STIG` | stigma questionnaire |
+
+Their real names, item texts and reference values appear only in the private content
+pack; the mapping is kept in the untracked `CLAUDE.local.md`. All other instruments
+(PHQ-9, GAD-7, School Burnout Inventory / SBI) may be named normally. No item texts of
+any instrument are stored in this repository; questionnaire specs contain codes and
+scoring rules only.
 
 ## 9. Privacy
 
-The data are anonymous survey responses of minors about their mental health.
+The data are anonymous survey responses of minors about their mental health. The
+privacy rules of the previous report were reviewed by the responsible authority without
+objections. **This program implements exactly those rules.** Additional suppression
+rules are not part of the scope; any change to the rules requires approval by SPOT.
 
-1. **No real data in the repository.** Only synthetic datasets in `tests/fixtures/`,
-   exported with code headings. A pre-commit hook rejects data files elsewhere.
-2. **Minimum group size.** Any figure based on a group with fewer than
-   `min_group_size` valid answers (default 10, configurable) is not shown. This applies
-   to the whole school as well: below the threshold, no report is produced.
-   Suppression is implemented once in `present/privacy.py` and used by every section.
-3. **Logs** contain counts, warnings and file names, never response values or free
-   text.
-4. **Free-text answers** are not part of the main report. They go into a separate
-   appendix document.
-5. **Secrets** (paths on the server, credentials of the cron script) are never in the
+1. **Minimum group size.** A subgroup is only shown if it has at least
+   `min_group_size` valid answers (10, as in the reviewed report). Values below 10 are
+   rejected by the configuration. Below 10 answers for the whole school, no report is
+   produced. The rule is implemented once in `present/privacy.py` and used by every
+   section.
+2. **No real data in the repository.** Only synthetic datasets in `tests/fixtures/`,
+   exported with code headings. A data guard rejects data files elsewhere, both as a
+   pre-commit hook and in CI.
+3. **Logs and validation messages** contain counts, column codes and file names, never
+   response values or free text.
+4. **Secrets** (server paths, credentials of the cron script) are never in the
    repository.
-
-Whether individual cells of a table (not just whole groups) must be suppressed below a
-threshold is an open question (section 12).
 
 ## 10. Presentation and rendering
 
-- **Formatting** is done by Jinja filters (`pct`, `number`, `delta`, …) so templates
-  receive numbers and decide how to show them. Decimal separator is `.`, percentages
-  are rounded half-up.
+- **Formatting**: all number formatting lives in `present/formatting.py`. Jinja filters
+  (`pct`, `number`, `delta`, …) and chart axis labels both call these functions.
+  Decimal separator is configurable, default `.` (as in previous reports). Rounding is
+  half-up, implemented with `decimal.Decimal` (Python's `round()` rounds half to even).
 - **Design tokens** (colours, font sizes, spacing) are defined once in
   `templates/design.toml`. They are rendered into CSS custom properties and also read
   by the chart style, so text and charts always match.
 - **Charts**: complex charts (box plots, histograms, scatter plots, UpSet-style
-  pattern charts) are matplotlib figures exported as SVG with the shared style. Simple
-  elements (stacked percentage bars, key-figure boxes, change indicators) are built
-  directly in HTML/CSS via macros.
-- Charts that need person-level values (e.g. a scatter plot of two scores) receive
-  read-only access to the derived feature table of the current wave. These values are
-  never persisted.
+  pattern charts) are matplotlib figures exported as SVG. The shared style is applied
+  with `matplotlib.rc_context` (no global state) and `svg.hashsalt` is fixed so that SVG
+  output is identical on every machine. Simple elements (stacked percentage bars,
+  key-figure boxes, change indicators) are built directly in HTML/CSS via macros.
+- Charts that need person-level values (e.g. the scatter plot of burnout and
+  resilience scores) receive read-only access to the derived feature table of the
+  current wave. These values are never persisted.
 - **Figure and table numbers** are assigned in the template, not in chart titles.
 - **PDF**: WeasyPrint with CSS Paged Media for page numbers, running headers, table of
   contents with page numbers and controlled page breaks.
@@ -352,29 +463,47 @@ threshold is an open question (section 12).
 ```
 spot-report build <bundle> [--report-type auto|initial|followup]
                            [--out DIR] [--store PATH] [--content-dir DIR]
-spot-report build --responses FILE --school ID --wave LABEL
+spot-report build --responses FILE --school ID --wave LABEL --fieldwork-end DATE
                   --questionnaire-version V [...]
+spot-report validate <bundle>
 spot-report snapshot list   [--school ID]
 spot-report snapshot export --school ID --wave LABEL
-spot-report validate <bundle>
 ```
 
-Outputs per run in `out/<school>/<wave>/`: `report.pdf`, `report.html` (for
-debugging), `appendix-freetext.pdf`, `run.log`.
+Outputs per run in `<out>/<school>/<wave>/`: `report.pdf`, `report.html` (for
+debugging), `run.log` and `result.json`. `result.json` is the machine-readable result
+for the automation script:
 
-Exit codes for the cron script: `0` success, `1` invalid input, `2` privacy threshold
-not met, `3` rendering error.
+```json
+{ "status": "ok", "exit_code": 0, "report_type": "initial",
+  "report": "report.pdf", "warnings": 2, "message": "" }
+```
+
+Exit codes for the cron script:
+
+| Code | Meaning |
+|---|---|
+| 0 | success |
+| 1 | unexpected internal error (Python's default for uncaught exceptions) |
+| 3 | invalid input (manifest, file or validation errors) |
+| 4 | too few answers for a report (minimum group size) |
+| 5 | rendering error |
+
+Guidance for the automation script: codes 3 and 4 are final (retrying cannot help);
+they produce an error e-mail with the message from `result.json`. Only the LimeSurvey
+export (network) should be retried, not the report generation.
 
 ## 12. Testing
 
 - **Unit tests** per metric on small hand-made DataFrames with known results.
 - **Fixture tests** on the synthetic datasets in `tests/fixtures/`.
-- **Legacy parity tests**: for every fixture, the numbers of the previous program are
-  stored once as JSON in `tests/fixtures/expected/`. The new metrics must reproduce
-  them (or deviations must be documented as intentional fixes).
+- **Legacy parity tests**: for every fixture, the numbers computed by the previous
+  program are stored once as JSON in `tests/fixtures/expected/`. Only numbers computed
+  from the data are stored, never reference values from literature. The new metrics must
+  reproduce them, or deviations must be documented as intentional fixes.
 - **Render smoke test**: the demo content pack renders a PDF from a fixture without
-  warnings.
-- CI (GitHub Actions) runs linting and all tests on every pull request.
+  WeasyPrint warnings.
+- CI (GitHub Actions) runs linting, the data guard and all tests on every pull request.
 
 ## 13. Decisions
 
@@ -383,21 +512,22 @@ not met, `3` rendering error.
 | D1 | HTML/CSS → PDF with WeasyPrint | Full design freedom, print features via CSS Paged Media, no browser dependency |
 | D2 | Two report types on a shared core | Different structure and texts, no duplicated computation |
 | D3 | Metrics are numbers; formatting only in presentation | Comparisons between waves need numbers |
-| D4 | Snapshots in SQLite, JSON export | Follow-up reports without old raw data; same store for the dashboard |
+| D4 | Snapshots in SQLite, JSON export | Fast comparisons; same store for the dashboard |
 | D5 | No LimeSurvey dependency; input bundle from external script | Program stays independent of LimeSurvey updates |
-| D6 | Private content pack; neutral aliases for instruments | No instrument content in the public repository |
+| D6 | Private content pack; neutral aliases for some instruments | No instrument content in the public repository |
 | D7 | AGPL-3.0 | Improvements by others stay open |
 | D8 | Python 3.12, uv, ruff, pytest, Conventional Commits | Current standard tooling, clean history |
+| D9 | Privacy rules exactly as in the reviewed report | Reviewed by the responsible authority; changes only with SPOT approval |
+| D10 | Input bundles are archived by this program | Snapshots can be recomputed when metric definitions change; one owner for the archive |
+| D11 | Survey registry maps LimeSurvey surveys to school and wave | LimeSurvey has no notion of schools; follow-up reports need a stable school id |
 
 Larger future decisions get their own ADR in `docs/decisions/`.
 
 ## 14. Open questions
 
-- Manifest details: how does the cron script know school id and wave label for a survey?
-- Cell-level suppression rule for small counts inside tables.
 - Content and structure of the follow-up report.
 - Statistical method for "relevant change" between waves (e.g. confidence intervals
   for differences of proportions, Welch test for means).
-- Raw data archive: who stores the input bundles long term (cron script or this
-  program), and is a `recompute` command needed when metric definitions change?
-- AI summary of free-text answers: privacy assessment needed before any implementation.
+- Free-text answers: format, review by a SPOT person before sending, delivery. Not
+  implemented until decided.
+- Response quality rules (section 4.1).
