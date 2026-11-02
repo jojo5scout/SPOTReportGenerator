@@ -1,0 +1,42 @@
+# Local Claude Code context (paths, licensed scale name)
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Private content pack, outputs, real data
+content/
+out/
+data/
+
+# Data files: only synthetic fixtures and demo content are allowed
+*.xlsx
+*.xls
+*.csv
+!tests/fixtures/**/*.xlsx
+!tests/fixtures/**/*.csv
+!examples/content-demo/**/*.csv
+
+# Databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Secrets
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
