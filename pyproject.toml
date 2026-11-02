@@ -1,0 +1,23 @@
+[project]
+name = "spot-report"
+version = "0.1.0"
+description = "Generates PDF reports for schools from SPOT survey responses."
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "Johannes" }]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+spot-report = "spot_report.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
