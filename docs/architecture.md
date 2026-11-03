@@ -163,6 +163,26 @@ column with a value that is not an integer stays `string` with the raw text, so 
 validation can report it by column code and count (`unconverted_columns`); values are
 never silently turned into `NA`. Format details: ADR 0001.
 
+Validation (`ingest/validate.py`) checks structure only, against the questionnaire spec.
+All findings are errors; each has a rule, a column code and a count of offending cells
+(never a value, an id or a row):
+
+| Rule | Meaning |
+|---|---|
+| `missing_column` | a required column of the spec is absent (optional columns may be) |
+| `invalid_code` | single-choice cell not among the allowed codes |
+| `invalid_marker` | multi-select option cell not equal to the `selected` code |
+| `out_of_range` | numeric cell outside the inclusive range of the spec |
+| `not_an_integer` | numeric cell that is not an integer (column left as text by the reader) |
+| `duplicate_id`, `empty_id` | response id repeated (rows repeating an earlier id) or missing |
+| `unreadable_file`, `invalid_manifest`, `unknown_version` | the bundle cannot be read; the message is the reason from the reader and contains no cell values |
+
+Empty cells are never counted by any rule, not even in a column that is empty for every
+respondent (D12). Free-text columns, metadata other than the response id and columns
+the spec does not know are not value-checked; an unknown column is not a finding.
+`spot-report validate <bundle>` prints one line per finding and exits with code 3 if
+there is an error.
+
 For local development, `spot-report build` also accepts a single responses file plus
 `--school`, `--wave`, `--fieldwork-end` and `--questionnaire-version` options instead of
 a bundle.
