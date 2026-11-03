@@ -20,6 +20,7 @@ from spot_report.metrics import (
     burnout,
     demography,
     diagnoses,
+    resilience,
     stigma,
     symptoms,
 )
@@ -38,6 +39,7 @@ DOMAINS: tuple[ModuleType, ...] = (
     association,
     stigma,
     burnout,
+    resilience,
 )
 
 

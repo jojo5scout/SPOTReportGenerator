@@ -516,6 +516,18 @@ other categories or levels are not part of the group. The previous report's coun
 these distributions. Small groups are computed as well; the minimum group size rule is
 applied by the presentation.
 
+Resilience (`resilience.res.*`) holds the `Summary` of the `RES` sum (`resilience.res.total`),
+the same for the burdened (`.total.burdened`, `burdened == True`) and for the non-burdened
+(`.total.nonburdened`), and the `Distribution` of the sum over every possible score
+(`resilience.res.histogram`, categories `"0"` to the maximum sum derived from the spec's
+item count and range). A respondent without a sum (an empty item, D12) is `n_missing`;
+respondents outside a subgroup are not counted as missing. The architecture does not
+define the non-burdened group; the previous report's definition is kept: `burdened` is not
+`True` and at least one of the PHQ-9 and GAD-7 sums is present. With complete symptom
+data this equals `burdened == False`; where one score is missing and the other is below
+its cut-off, the respondent is non-burdened here although `burdened` is `NA`. The
+reference value and the lines of the previous histogram are presentation.
+
 ### 6.3 MetricSet and snapshot
 
 A `MetricSet` is an immutable mapping of metric ids to metric values, validated on
