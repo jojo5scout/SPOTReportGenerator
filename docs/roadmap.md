@@ -54,7 +54,9 @@ where it belongs, so ids are not always in reading order.
 
 ### R07 Questionnaire spec
 - `questionnaire/specs/2026.1.yaml`: for every item its column code, answer codes,
-  scale range and the score it belongs to. No item texts.
+  scale range and the score it belongs to, and which columns are multi-select options
+  (empty = not selected, architecture D12). No item texts. Display conditions are not
+  modelled.
 - `spec.py` loads a spec by version and gives typed access
   (e.g. `spec.scale("PHQ9").columns`).
 - **Done when:** all column codes used by the previous program are covered; a test
@@ -73,12 +75,16 @@ where it belongs, so ids are not always in reading order.
 - **Done when:** the same dataset as CSV and XLSX produces identical DataFrames.
 
 ### R09 Validation
-- Checks: required columns present, answer codes within the allowed set, numeric values
-  within range, duplicate response ids, no empty cells in always-shown questions
-  (architecture D12). Findings contain column code, rule and count, never response
-  values or row contents.
+- Structural checks only: required columns present, answer codes within the allowed set
+  (including numeric values within range), duplicate response ids, file readable in the
+  expected format. Findings contain column code, rule and count, never response values
+  or row contents.
+- Empty cells are never a finding, neither error nor warning, including a column that
+  is empty for every respondent (architecture D12).
 - `spot-report validate <bundle>` prints the findings; exit code 3 on errors.
-- **Done when:** a fixture with injected errors produces the expected findings.
+- **Done when:** a fixture with injected errors produces the expected findings; a
+  fixture with empty cells, including a column empty for every respondent, produces no
+  findings.
 
 ### R10 Bundle archive
 - Successful runs copy the bundle to `SPOT_ARCHIVE_DIR/<school>/<wave>/<seq>/`. An
@@ -101,12 +107,16 @@ where it belongs, so ids are not always in reading order.
 ### R12 Derived features
 - `features.py`: PHQ-9 and GAD-7 sum scores and severity buckets, cut-off flags,
   "burdened" flag, diagnosis yes/no, any treatment, RES sum score, SBI subscale sums.
-- No missing-item rule (architecture D12): scores need all items. A missing item never
-  becomes a score; it raises an error, since validation should have rejected it.
-  Unticked multi-select options and conditionally hidden questions are handled as
-  defined in the questionnaire spec.
-- **Done when:** unit tests cover complete responses, an incomplete scale (rejected,
-  not scored) and conditional and multi-select questions.
+- Empty cells as in architecture D12, without errors, warnings or log messages:
+  - multi-select option empty → not selected; the respondent stays in the denominator;
+  - any other question empty → not shown; the respondent is left out of that
+    question's denominator;
+  - a scale score is computed only if all its items are present, otherwise it is
+    missing for that respondent.
+- No display conditions are modelled.
+- **Done when:** unit tests cover complete responses, a scale with one empty item
+  (score missing, no error), an empty multi-select option (counted as not selected) and
+  an empty follow-up question (excluded from its denominator).
 
 ### R13 Legacy parity baseline
 - Run the previous program locally (path in `CLAUDE.local.md`) on every fixture and
@@ -293,11 +303,14 @@ Starts once the content of the follow-up report has been defined with SPOT.
 
 ## M9 Response quality checks
 
-Last milestone. Design requirements in architecture §4.1.
+Last milestone. Design requirements in architecture §4.1. All logic about missing
+answers, display conditions and response cleaning belongs here; until then the input is
+assumed to be clean (architecture D12).
 
 ### R48 Rule definition (document, not code)
 - Which patterns count as implausible (e.g. straight-lining across scales,
   contradictory answers, implausible demographic combinations), agreed with SPOT.
+- Rules for missing or inconsistent answers.
 
 ### R49 Quality stage
 - `quality/` with a versioned rule set; flagged responses excluded from all metrics;
