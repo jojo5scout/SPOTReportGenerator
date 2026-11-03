@@ -7,7 +7,7 @@ checks this (headings match the code pattern, no cell holds whitespace or a long
 string, response ids are unique). Add new fixtures here only after they pass that test.
 
 Only the spreadsheet layout of a LimeSurvey export (`export_responses`, headings
-`code`, responses `short`) is imitated, see `docs/architecture.md` §4.1.
+`code`, responses `short`) is imitated, see `docs/architecture.md` §3.
 
 ## Datasets
 
