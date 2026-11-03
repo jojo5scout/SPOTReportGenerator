@@ -3,11 +3,12 @@
 All datasets in this folder are **generated synthetic data**. They contain no real
 responses, no question texts and no answer texts: headings are question codes, cells
 are numbers or short answer codes. `tests/test_fixtures.py` loads every file here and
-checks this (headings match the code pattern, no cell holds whitespace or a long
-string, response ids are unique). Add new fixtures here only after they pass that test.
+checks this (headings match the code pattern, no cell has surrounding whitespace or
+contains whitespace inside or a long string, response ids are unique). The loading
+goes through the production readers in `spot_report.ingest`. Add new fixtures here only after they pass that test.
 
-Only the spreadsheet layout of a LimeSurvey export (`export_responses`, headings
-`code`, responses `short`) is imitated, see `docs/architecture.md` §3.
+Only the layout of a LimeSurvey export (`export_responses`, headings `code`,
+responses `short`) is imitated, see `docs/architecture.md` §3.
 
 ## Datasets
 
@@ -16,6 +17,23 @@ Only the spreadsheet layout of a LimeSurvey export (`export_responses`, headings
 | `synthetic_300.xlsx` | 300 | 75 | XLSX, one sheet, header in row 1 |
 | `synthetic_500.xlsx` | 500 | 75 | XLSX, one sheet, header in row 1 |
 | `synthetic_800.xlsx` | 800 | 75 | XLSX, one sheet, header in row 1 |
+| `synthetic_300.csv` | 300 | 75 | LimeSurvey CSV, generated from the XLSX |
+| `synthetic_500.csv` | 500 | 75 | LimeSurvey CSV, generated from the XLSX |
+| `synthetic_800.csv` | 800 | 75 | LimeSurvey CSV, generated from the XLSX |
+
+The XLSX files are the source. The CSV files are generated from them in the format of
+the LimeSurvey CSV export (UTF-8 without BOM, comma, LF line endings, one heading row
+of codes, empty cells empty) and must not be edited by hand. After changing or adding
+an XLSX fixture, regenerate them:
+
+```bash
+uv run python tools/make_csv_fixtures.py          # write the CSV files
+uv run python tools/make_csv_fixtures.py --check  # fail if a CSV is out of date
+```
+
+`tests/ingest/test_fixture_parity.py` checks that each CSV and its XLSX read into
+identical DataFrames; `tests/tools/test_make_csv_fixtures.py` checks that the committed
+CSV files are up to date.
 
 The three files have the same column structure and differ only in the number of
 responses (and, as they are random draws, in the individual values). They are
@@ -43,7 +61,7 @@ Besides the two empty metadata columns, only the 21 multi-select option columns 
 
 ## What they are meant to test
 
-- Readers (R08) and validation (R09): loading XLSX into a DataFrame, mapping
+- Readers (R08) and validation (R09): loading CSV and XLSX into a DataFrame, mapping
   columns to codes, the codes-only heading check, id uniqueness.
 - Multi-select handling: option column empty means not selected (decision D12).
 - Questions that are partly filled (`FEHLTAGQ1`) and empty-by-design columns,

@@ -154,6 +154,15 @@ Rules for the responses file:
   call (headings `code`, responses `short`), and XLSX with the same structure (used by
   the existing synthetic datasets).
 
+Reading (`ingest/readers.py`) turns both formats into the same DataFrame. The CSV is
+UTF-8 (a BOM is tolerated), comma-separated, with one heading row of question codes
+and one row per response. Headings and cells are stripped; empty or whitespace-only
+cells become `NA` and nothing else is interpreted (D12). Response id and numeric
+columns of the questionnaire spec are `Int64`, all other columns `string`. A numeric
+column with a value that is not an integer stays `string` with the raw text, so that
+validation can report it by column code and count (`unconverted_columns`); values are
+never silently turned into `NA`. Format details: ADR 0001.
+
 For local development, `spot-report build` also accepts a single responses file plus
 `--school`, `--wave`, `--fieldwork-end` and `--questionnaire-version` options instead of
 a bundle.
