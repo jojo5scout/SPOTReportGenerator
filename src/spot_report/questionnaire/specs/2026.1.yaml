@@ -1,0 +1,166 @@
+# Questionnaire spec, version 2026.1.
+#
+# Codes and scoring rules only: no item texts, no labels (those belong in the private
+# content pack). Display conditions are not modelled (architecture D12).
+#
+# Notes on reading this file
+# - Answer codes are always quoted strings (an unquoted Y would become a boolean).
+# - A column is required unless it says `required: false`. Optional columns are read
+#   by the previous program but absent from the synthetic fixtures, so their presence
+#   in a real export is unconfirmed.
+# - Ranges marked "inferred" are observed in the synthetic fixtures only and need
+#   confirmation.
+
+version: "2026.1"
+
+# LimeSurvey system columns. Never analysed; `id` identifies a response.
+response_id: id
+metadata:
+  - id
+  - submitdate
+  - lastpage
+  - startlanguage
+  - seed
+  - startdate
+  - datestamp
+
+# Single-choice questions: the set of allowed answer codes.
+single_choice:
+  DQSEX:
+    codes: ["M", "W", "D"]
+  DQSTUFE:
+    codes: ["Gym1", "Gym2", "Gym3", "Gym4"]
+  DIAGQ0:
+    # "Ja" is stated by the previous program (it accepts several spellings of yes);
+    # "Nein" is inferred from the fixtures.
+    codes: ["Ja", "Nein"]
+  FEHLTAGQ0:
+    codes: ["FEJA", "FENE"]
+  FEHLTAGQ1:
+    # Empty when FEHLTAGQ0 is not FEJA (D12: not shown).
+    codes: ["FE01", "FE05", "FE10", "FE20"]
+
+# Numeric single questions outside any scale.
+numeric:
+  DQAGE:
+    # Inferred from the fixtures (the previous program states no range).
+    min: 12
+    max: 20
+  SIPHQ:
+    min: 0
+    max: 3
+
+# Multi-select questions: one column `<group>[<option>]` per option. The cell holds
+# the `selected` code when the option was ticked and is empty otherwise; empty means
+# not selected, the respondent stays in the denominator (D12).
+multi_select:
+  DIAGQ1:
+    selected: "Y"
+    options: [DEPR, ANGS, ESST, ADHS, PTBS, BIPO, PSYC]
+    # Read by the previous program, absent from the fixtures.
+    optional_options: [BORD, OTHER]
+  DIAGQ2:
+    selected: "Y"
+    options: [NIEM, HAUS, KIND, SCHU, PSYO, PSYA, SELB, BERA]
+    optional_options: [KLIN]
+  DIAGQ3:
+    selected: "Y"
+    options: [NOT, MEDI, THER]
+    # Read by the previous program, absent from the fixtures.
+    optional_options: [STAT, OTHER]
+
+# Free-text columns: ignored by this program (D14), listed so that later stages know
+# them. `group` ties an "other" text column to its multi-select question.
+free_text:
+  - code: "DIAGQ1[other]"
+    group: DIAGQ1
+  - code: "DIAGQ2[other]"
+    group: DIAGQ2
+  - code: "DIAGQ3[other]"
+    group: DIAGQ3
+  - code: ANGE2
+    required: false
+
+# Scales. `range` is the allowed integer range of every item. `scoring: sum` means the
+# score is the sum of the items (computed in R12); `scoring: items` means the items are
+# analysed one by one and there is no total.
+scales:
+  PHQ9:
+    scoring: sum
+    # Standard item range.
+    range: [0, 3]
+    columns:
+      - "PHQ9[PHQQ1]"
+      - "PHQ9[PHQQ2]"
+      - "PHQ9[PHQQ3]"
+      - "PHQ9[PHQQ4]"
+      - "PHQ9[PHQQ5]"
+      - "PHQ9[PHQQ6]"
+      - "PHQ9[PHQQ7]"
+      - "PHQ9[PHQQ8]"
+      - "PHQ9[PHQQ9]"
+  GAD7:
+    scoring: sum
+    # Standard item range.
+    range: [0, 3]
+    columns:
+      - "GAD7[GADQ1]"
+      - "GAD7[GADQ2]"
+      - "GAD7[GADQ3]"
+      - "GAD7[GADQ4]"
+      - "GAD7[GADQ5]"
+      - "GAD7[GADQ6]"
+      - "GAD7[GADQ7]"
+  SBI:
+    scoring: sum
+    # The previous program caps the total at 45 for nine items, i.e. 0 to 5 per item.
+    range: [0, 5]
+    columns:
+      - "SBI[SBIQ0]"
+      - "SBI[SBIQ1]"
+      - "SBI[SBIQ2]"
+      - "SBI[SBIQ3]"
+      - "SBI[SBIQ4]"
+      - "SBI[SBIQ5]"
+      - "SBI[SBIQ6]"
+      - "SBI[SBIQ7]"
+      - "SBI[SBIQ8]"
+    # Subscale grouping exactly as in the previous program; the total uses all items.
+    subscales:
+      EXHAUSTION:
+        - "SBI[SBIQ0]"
+        - "SBI[SBIQ3]"
+        - "SBI[SBIQ6]"
+        - "SBI[SBIQ8]"
+      CYNICISM:
+        - "SBI[SBIQ1]"
+        - "SBI[SBIQ2]"
+        - "SBI[SBIQ4]"
+        - "SBI[SBIQ5]"
+        - "SBI[SBIQ7]"
+  RES:
+    scoring: sum
+    # The previous program plots the total on 0 to 40 for ten items, i.e. 0 to 4 per item.
+    range: [0, 4]
+    columns:
+      - "RESI[RESIQ1]"
+      - "RESI[RESIQ2]"
+      - "RESI[RESIQ3]"
+      - "RESI[RESIQ4]"
+      - "RESI[RESIQ5]"
+      - "RESI[RESIQ6]"
+      - "RESI[RESIQ7]"
+      - "RESI[RESIQ8]"
+      - "RESI[RESIQ9]"
+      - "RESI[RESIQ10]"
+  STIG:
+    scoring: items
+    # The previous program draws all five items on an axis from 0 to 9. Inferred from
+    # the fixtures: StigmaQ3 only takes 1 to 7, the others 1 to 9.
+    range: [0, 9]
+    columns:
+      - StigmaQ1
+      - StigmaQ2
+      - StigmaQ3
+      - StigmaQ4
+      - StigmaQ5
