@@ -475,6 +475,19 @@ who answered it. Whether the respondent said yes to `FEHLTAGQ0` is not checked (
 conditions are not modelled); an empty follow-up answer, including that of respondents
 who were not shown the question, counts in `n_missing`.
 
+Symptoms (`symptoms.*`) reads the symptom features (section 6.5): severity
+`Distribution`s and cut-off `Proportion`s for PHQ-9 and GAD-7, the combined `burdened`
+proportion, and the distribution and the "at least 2" proportion of PHQ-9 item 9
+(`symptoms.phq9_item9.*`) and of the impairment question (`symptoms.impairment.*`). A
+score that could not be computed, an undeterminable `burdened` and an empty answer count
+in `n_missing`. The severity distributions exist a second time for the respondents who
+ticked the depression (PHQ-9) or anxiety (GAD-7) option of `DIAGQ1`
+(`...severity.depression_diagnosis`, `...severity.anxiety_diagnosis`); like the other
+subgroups of the diagnosis metrics they count only the group, and `DIAGQ0` is not
+consulted (the previous report's definition). The two option codes are constants of the
+module, the column codes are looked up in the spec. The threshold 2 for item 9 and
+impairment is the previous report's definition as well.
+
 ### 6.3 MetricSet and snapshot
 
 A `MetricSet` is an immutable mapping of metric ids to metric values, validated on
