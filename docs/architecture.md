@@ -355,6 +355,29 @@ default method. The set of types may grow (e.g. for multi-select patterns), but 
 type must be JSON-serialisable and must contain enough information for statistical
 comparison (counts and denominators, or mean, SD and n).
 
+Details fixed in `metrics/types.py`:
+
+- Invariants are checked on construction (non-negative integer counts, `k <= n`,
+  categories unique and as many as counts, floats finite). Violations raise
+  `MetricError`.
+- `Summary`: with `n == 0` all statistics are `None`; with `n == 1` the sample SD is
+  undefined and `None`, the other statistics are defined; from `n == 2` all are numbers.
+  Median and quartiles come from `numpy.quantile` (`linear`); no rounding.
+- `Proportion.share` is `None` for `n == 0`; `Distribution.n` is the sum of the counts
+  and `Distribution.shares` is `None` for `n == 0`.
+- Constructors from data live next to the types so that all domains use the same
+  conventions: `Summary.from_values(values, n_missing)`,
+  `Proportion.from_mask(mask, n_missing)`,
+  `Distribution.from_values(values, categories, n_missing)`. They take only the valid
+  respondents (no missing values; the left-out respondents are passed as `n_missing`)
+  and their errors never contain values.
+- JSON: every metric converts to a dict tagged with `"kind"`
+  (`proportion | summary | distribution`, the same strings as the store's `kind`
+  column), e.g. `{"kind": "proportion", "k": 3, "n": 10, "n_missing": 1}`. `None` is
+  written as `null`, there is no NaN, and floats round-trip exactly. Parsing is strict
+  (unknown or missing keys raise `MetricFormatError`). A new type is added to
+  `METRIC_TYPES` with its own kind tag; existing payloads do not change.
+
 ### 6.2 Metric ids
 
 Pattern: `domain.instrument.measure[.subgroup]`, lowercase, `[a-z0-9_]` per segment.
@@ -372,9 +395,23 @@ Ids are part of the snapshot format. Renaming an id is a breaking change and nee
 migration. The registry (`metrics/registry.py`) records for every id: type, domain,
 questionnaire items it depends on, and since which questionnaire version it exists.
 
+`validate_metric_id` (in `metrics/types.py`) enforces the pattern: 3 or 4 segments of
+`[a-z0-9_]`, none empty. Anything else raises `MetricIdError`. It is used by `MetricSet`
+and by the registry.
+
+The registry is built from `MetricDefinition(id, kind, domain, items, since)` tuples
+that each domain module exposes (there is no mutable module-level registry). It rejects
+duplicate ids and a `domain` that differs from the first id segment, and
+`MetricRegistry.check(metric_set)` verifies that every id is registered with the
+registered kind. `METRICS_VERSION` (an integer in `metrics/registry.py`, stored per
+wave) is bumped when numbers under an existing id become incomparable with earlier
+snapshots.
+
 ### 6.3 MetricSet and snapshot
 
-A `MetricSet` maps metric ids to metric values. A **snapshot** is a `MetricSet` plus
+A `MetricSet` is an immutable mapping of metric ids to metric values, validated on
+construction and iterated in sorted id order. Its JSON form is one object
+`{metric_id: metric}` with sorted keys, so equal sets give identical text. A **snapshot** is a `MetricSet` plus
 wave metadata (school, wave label, fieldwork dates, questionnaire version, program
 version, metrics version, quality rule-set version, archive path).
 
