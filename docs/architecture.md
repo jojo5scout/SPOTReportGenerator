@@ -290,8 +290,9 @@ SPOTReportGenerator/
 │   │   └── <domain>.py             # demography, diagnoses, absences, symptoms,
 │   │                               # association, stigma, burnout, resilience
 │   ├── store/
-│   │   ├── schema.sql
-│   │   └── sqlite_store.py
+│   │   ├── schema.sql              # package data, run on a new database
+│   │   ├── snapshot.py             # Snapshot: MetricSet + wave metadata
+│   │   └── sqlite_store.py         # open_store, save/load snapshot, list_waves
 │   ├── compare/                    # follow-up comparisons
 │   ├── present/
 │   │   ├── formatting.py           # shared number formatting (filters + charts)
@@ -536,9 +537,31 @@ construction and iterated in sorted id order. Its JSON form is one object
 wave metadata (school, wave label, fieldwork dates, questionnaire version, program
 version, metrics version, quality rule-set version, archive path).
 
-### 6.4 SQLite schema (draft)
+`store/snapshot.py` defines the frozen dataclass `Snapshot` with the fields `school_id`,
+`school_name`, `wave_label`, `fieldwork_end`, `questionnaire_version`, `program_version`,
+`metrics_version`, `metrics` (the `MetricSet`) and the optional `fieldwork_start`,
+`limesurvey_id`, `quality_rules_version`, `archive_path`. Dates are `datetime.date`;
+the constructor rejects empty ids and versions, an end before the start and wrongly
+typed fields (`SnapshotError`). `Snapshot` lives in the store package because the
+store is where it is created and read; `compare` and `present` import it from there.
+`archive_path` is the archived bundle the metrics were computed from (section 3,
+"Archive"), relative to the archive root, and is stored as given.
+
+A snapshot holds the full, unsuppressed metrics; privacy rules are applied at
+presentation (section 9).
+
+### 6.4 SQLite schema
+
+`store/schema.sql` (shipped as package data and read with `importlib.resources`) is
+run on an empty database file:
 
 ```sql
+CREATE TABLE schema_version (
+    id      INTEGER PRIMARY KEY CHECK (id = 1),   -- exactly one row
+    version INTEGER NOT NULL
+);
+INSERT INTO schema_version (id, version) VALUES (1, 1);
+
 CREATE TABLE school (
     id   TEXT PRIMARY KEY,
     name TEXT NOT NULL
@@ -563,11 +586,44 @@ CREATE TABLE wave (
 CREATE TABLE metric (
     wave_id   INTEGER NOT NULL REFERENCES wave(id) ON DELETE CASCADE,
     metric_id TEXT NOT NULL,
-    kind      TEXT NOT NULL,     -- proportion | summary | distribution | …
+    kind      TEXT NOT NULL,     -- proportion | summary | distribution | pattern_counts
     payload   TEXT NOT NULL,     -- JSON
     PRIMARY KEY (wave_id, metric_id)
 );
 ```
+
+Compared with the first draft, only the `schema_version` table is new (for future
+migrations); the other tables are unchanged.
+
+Conventions of `store/sqlite_store.py` (standard library `sqlite3`, no ORM):
+
+- `open_store(path, create=True)` returns a `SQLiteStore` (a context manager). The path
+  is always passed in by the caller; the store has no default location. A missing file
+  is created (not its directory) unless `create=False`, which is for read-only
+  commands. Every connection sets `PRAGMA foreign_keys = ON`.
+- **Schema version.** A new database records `SCHEMA_VERSION` (currently 1). Opening a
+  database with a newer version raises `StoreVersionError` ("update the program"), as
+  does any other version this code cannot read; a database that is not a snapshot
+  store raises `StoreError` and is not touched. There is no migration framework: a
+  migration is added together with the first schema change.
+- **Dates and times** are ISO 8601 text: `YYYY-MM-DD` for fieldwork dates, so that text
+  order is date order, and a timezone-aware timestamp for `created_at`.
+- **`save_snapshot(snapshot)`** is one transaction. It inserts or updates the school
+  (the name is overwritten) and upserts the wave on `(school_id, label)`: the metadata
+  is overwritten, the wave row and its `id` stay, all `metric` rows of the wave are
+  deleted and written again, so metric ids missing from the new snapshot disappear and
+  a failure leaves the old snapshot intact. Each metric row holds `metric.kind` and
+  `metric.to_json()`; floats round-trip exactly.
+- **`load_snapshot(school_id, wave_label)`** returns the `Snapshot` and raises
+  `SnapshotNotFoundError` if there is none. A row whose payload cannot be parsed or
+  whose `kind` column differs from the payload raises `StoreError` (the message names
+  ids, never values).
+- **`list_waves(school_id)`** returns `WaveInfo` headers ordered by `fieldwork_end`,
+  earliest first; waves with equal `fieldwork_end` are ordered by `label` (plain text
+  order). An unknown school has no waves.
+- **`created_at`** is the time of the last save of the wave. It is store bookkeeping,
+  not part of `Snapshot`: it is reported in `WaveInfo` and does not take part in the
+  save/load round trip (`save_snapshot` accepts it as an argument for tests).
 
 Running the program again for the same school and wave replaces that wave's snapshot.
 `spot-report snapshot export` writes a snapshot as JSON for inspection.
