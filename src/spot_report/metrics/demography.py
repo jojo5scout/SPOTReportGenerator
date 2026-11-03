@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
     from spot_report.questionnaire import QuestionnaireSpec
 
-__all__ = ["DEFINITIONS", "compute"]
+__all__ = ["compute", "definitions"]
 
 DOMAIN = "demography"
 SINCE = "2026.1"
@@ -46,11 +46,16 @@ GENDER_ID = "demography.gender.distribution"
 LEVEL_ID = "demography.level.distribution"
 AGE_ID = "demography.age.distribution"
 
-DEFINITIONS: tuple[MetricDefinition, ...] = (
+_DEFINITIONS: tuple[MetricDefinition, ...] = (
     MetricDefinition(GENDER_ID, "distribution", DOMAIN, (GENDER_COLUMN,), SINCE),
     MetricDefinition(LEVEL_ID, "distribution", DOMAIN, (LEVEL_COLUMN,), SINCE),
     MetricDefinition(AGE_ID, "distribution", DOMAIN, (AGE_COLUMN,), SINCE),
 )
+
+
+def definitions(spec: QuestionnaireSpec) -> tuple[MetricDefinition, ...]:
+    """The metric definitions of this domain (the same for every spec version)."""
+    return _DEFINITIONS
 
 
 def compute(

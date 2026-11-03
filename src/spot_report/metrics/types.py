@@ -40,10 +40,12 @@ __all__ = [
     "MetricFormatError",
     "MetricIdError",
     "MetricSet",
+    "PatternCounts",
     "Proportion",
     "Summary",
     "metric_from_dict",
     "metric_from_json",
+    "top_patterns",
     "validate_metric_id",
 ]
 
@@ -448,11 +450,207 @@ class Distribution(Metric):
 
 
 # --------------------------------------------------------------------------------------
+# PatternCounts
+# --------------------------------------------------------------------------------------
+
+#: A combination of selected options as option codes in option order; ``()`` is the
+#: empty combination (respondent selected none of the options).
+Pattern = tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class PatternCounts(Metric):
+    """Respondents per combination of selected options of a multi-select question.
+
+    ``options`` are the option codes in a defined order. ``patterns`` lists every
+    observed combination (a tuple of option codes in option order) and ``counts`` the
+    number of respondents with exactly that combination, so one respondent is counted
+    once. The empty combination ``()`` is stored like any other when it occurs, which
+    makes ``n`` (the sum of the counts) the number of respondents counted and the
+    "no option" count directly available. Combinations that do not occur are not
+    stored; every stored count is at least 1.
+
+    Patterns are in canonical order (fewer options first, then by option order), so
+    equal metrics are equal values and give identical JSON. Per-option totals and
+    shares are derived (:attr:`option_counts`), never stored.
+    """
+
+    kind: ClassVar[str] = "pattern_counts"
+
+    options: tuple[str, ...]
+    patterns: tuple[Pattern, ...]
+    counts: tuple[int, ...]
+    n_missing: int = 0
+
+    def __post_init__(self) -> None:
+        owner = type(self).__name__
+        if not isinstance(self.options, tuple) or not all(
+            isinstance(o, str) and o for o in self.options
+        ):
+            raise MetricError(f"{owner}.options must be a tuple of non-empty str")
+        if len(set(self.options)) != len(self.options):
+            raise MetricError(f"{owner}: options must be unique")
+        if not isinstance(self.patterns, tuple) or not all(
+            isinstance(p, tuple) and all(isinstance(o, str) for o in p)
+            for p in self.patterns
+        ):
+            raise MetricError(f"{owner}.patterns must be a tuple of tuples of str")
+        if not isinstance(self.counts, tuple):
+            raise MetricError(f"{owner}.counts must be a tuple of int")
+        for count in self.counts:
+            _count(owner, "counts", count)
+        _count(owner, "n_missing", self.n_missing)
+        if len(self.patterns) != len(self.counts):
+            raise MetricError(f"{owner}: patterns and counts differ in length")
+        if any(count == 0 for count in self.counts):
+            raise MetricError(
+                f"{owner}: only observed patterns are stored (count >= 1)"
+            )
+        index = {option: position for position, option in enumerate(self.options)}
+        keys = []
+        for pattern in self.patterns:
+            if any(option not in index for option in pattern):
+                raise MetricError(f"{owner}: a pattern contains an unknown option")
+            positions = tuple(index[option] for option in pattern)
+            if any(a >= b for a, b in pairwise(positions)):
+                raise MetricError(
+                    f"{owner}: a pattern must list each option once, in option order"
+                )
+            keys.append((len(positions), positions))
+        if len(set(keys)) != len(keys):
+            raise MetricError(f"{owner}: patterns must be unique")
+        if keys != sorted(keys):
+            raise MetricError(
+                f"{owner}: patterns must be in canonical order "
+                "(fewer options first, then option order)"
+            )
+
+    @property
+    def n(self) -> int:
+        """Respondents counted: the sum of all counts."""
+        return sum(self.counts)
+
+    def count_of(self, pattern: Sequence[str]) -> int:
+        """Respondents with exactly this combination (0 if it was not observed)."""
+        wanted = tuple(pattern)
+        for stored, count in zip(self.patterns, self.counts, strict=True):
+            if stored == wanted:
+                return count
+        return 0
+
+    @property
+    def option_counts(self) -> tuple[int, ...]:
+        """Respondents who selected each option (any combination), in option order."""
+        return tuple(
+            sum(
+                count
+                for pattern, count in zip(self.patterns, self.counts, strict=True)
+                if option in pattern
+            )
+            for option in self.options
+        )
+
+    @classmethod
+    def from_selections(
+        cls, selected: pd.DataFrame, n_missing: int = 0
+    ) -> PatternCounts:
+        """Count the combinations in a table of ticked options.
+
+        ``selected`` has one boolean column per option (the column order is the option
+        order, the column labels the option codes) and one row per respondent that
+        counts for this metric (``n`` is its length). It must not contain missing
+        values; respondents who are left out are passed as ``n_missing``. A row without
+        a ``True`` is the empty combination.
+        """
+        if not isinstance(selected, pd.DataFrame):
+            raise TypeError("selected must be a pandas DataFrame")
+        if not all(pd.api.types.is_bool_dtype(dtype) for dtype in selected.dtypes):
+            raise TypeError("selected must have boolean columns")
+        missing = int(selected.isna().sum().sum())
+        if missing:
+            raise ValueError(
+                f"selected contains {missing} missing value(s); drop them and pass "
+                "their number as n_missing"
+            )
+        options = tuple(str(option) for option in selected.columns)
+        tally: dict[tuple[int, ...], int] = {}
+        for row in selected.to_numpy(dtype=bool):
+            key = tuple(int(position) for position in np.flatnonzero(row))
+            tally[key] = tally.get(key, 0) + 1
+        ordered = sorted(tally.items(), key=lambda item: (len(item[0]), item[0]))
+        return cls(
+            options=options,
+            patterns=tuple(tuple(options[i] for i in key) for key, _ in ordered),
+            counts=tuple(count for _, count in ordered),
+            n_missing=n_missing,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "options": list(self.options),
+            "patterns": [list(pattern) for pattern in self.patterns],
+            "counts": list(self.counts),
+            "n_missing": self.n_missing,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> PatternCounts:
+        _check_payload(cls, data, ("options", "patterns", "counts", "n_missing"))
+        options, patterns, counts = data["options"], data["patterns"], data["counts"]
+        if (
+            not isinstance(options, list)
+            or not isinstance(patterns, list)
+            or not isinstance(counts, list)
+            or not all(isinstance(pattern, list) for pattern in patterns)
+        ):
+            raise MetricFormatError(
+                "pattern_counts options, patterns and counts must be lists "
+                "(patterns a list of lists)"
+            )
+        return _construct(
+            cls,
+            options=tuple(options),
+            patterns=tuple(tuple(pattern) for pattern in patterns),
+            counts=tuple(counts),
+            n_missing=data["n_missing"],
+        )
+
+
+def top_patterns(
+    metric: PatternCounts, size: int, k: int
+) -> tuple[tuple[Pattern, int], ...]:
+    """The ``k`` most frequent combinations of exactly ``size`` selected options.
+
+    Sorted by count (highest first); ties are broken by the combination itself, that
+    is by its option codes compared as text, one after the other. Fewer than ``k``
+    entries are returned if fewer such combinations occurred. This is presentation
+    logic for the help-source chart (the two most frequent single, pair and triple
+    combinations, padded with empty columns by the chart); it selects, it does not
+    suppress anything.
+    """
+    if size < 0 or k < 0:
+        raise ValueError("size and k must not be negative")
+    candidates = [
+        (pattern, count)
+        for pattern, count in zip(metric.patterns, metric.counts, strict=True)
+        if len(pattern) == size
+    ]
+    candidates.sort(key=lambda item: (-item[1], item[0]))
+    return tuple(candidates[:k])
+
+
+# --------------------------------------------------------------------------------------
 # Kinds and dispatch
 # --------------------------------------------------------------------------------------
 
 #: All metric types. A new kind is added here and nowhere else.
-METRIC_TYPES: tuple[type[Metric], ...] = (Proportion, Summary, Distribution)
+METRIC_TYPES: tuple[type[Metric], ...] = (
+    Proportion,
+    Summary,
+    Distribution,
+    PatternCounts,
+)
 
 #: ``kind`` tag -> type; the tags are the values of the store's ``kind`` column.
 METRIC_KINDS: Mapping[str, type[Metric]] = MappingProxyType(
