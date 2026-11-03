@@ -488,6 +488,21 @@ consulted (the previous report's definition). The two option codes are constants
 module, the column codes are looked up in the spec. The threshold 2 for item 9 and
 impairment is the previous report's definition as well.
 
+Association (`association.*`) cross-tabulates the feature `symptom_category` with the
+diagnosis status, for all respondents and per school level. The status is a partition of
+the respondents with a `DIAGQ0` answer: `diagnosed_treated` (diagnosis and
+`treatment_any`), `diagnosed_untreated`, `not_diagnosed`. For each symptom category
+there is one `Distribution` over these three statuses
+(`association.<category>.diagnosis_status`) and one per level
+(`association.<category>.diagnosis_status.<level>`, level = `DQSTUFE` code of the spec
+in lowercase); `association.symptoms.category` is the `Distribution` of the category
+itself, where the respondents whose category is undetermined are visible as `n_missing`.
+Within a group, respondents with an empty `DIAGQ0` are `n_missing`; respondents of
+other categories or levels are not part of the group. The previous report's counts
+(`known_diag`, `treated`, `unknown_diag`, the overlap sentences) are sums of rows of
+these distributions. Small groups are computed as well; the minimum group size rule is
+applied by the presentation.
+
 ### 6.3 MetricSet and snapshot
 
 A `MetricSet` is an immutable mapping of metric ids to metric values, validated on
@@ -547,6 +562,7 @@ dtypes), following D12:
 | `phq9_severity`, `gad7_severity` | ordered `category` | standard bands (PHQ-9 `minimal` 0–4, `mild` 5–9, `moderate` 10–14, `moderately_severe` 15–19, `severe` 20–27; GAD-7 the same up to `severe` 15–21); sum `NA` |
 | `phq9_cutoff`, `gad7_cutoff` | `boolean` | sum ≥ 10; sum `NA` |
 | `burdened` | `boolean` | PHQ-9 or GAD-7 cut-off, three-valued: `True` if one cut-off is `True`, `False` only if both are `False`; `NA` otherwise |
+| `symptom_category` | ordered `category` | combined symptom load, `mildnone` < `moderate` < `severe`: `severe` if PHQ-9 or GAD-7 ≥ 10 (even if the other score is missing); else, with both scores present, `moderate` if one is ≥ 5 and `mildnone` if both are < 5; `NA` where `burdened` is `NA` (a missing score could be ≥ 10) |
 | `phq9_item9`, `impairment` | `Int64` | PHQ-9 item 9 and `SIPHQ`, passed through; empty |
 | `diagnosis` | `boolean` | `DIAGQ0` is the yes code; empty |
 | `treatment_any` | `boolean` | any `DIAGQ3` option except the none option selected; never `NA` (empty option = not selected) |

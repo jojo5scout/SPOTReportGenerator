@@ -14,7 +14,7 @@ from __future__ import annotations
 from types import ModuleType
 from typing import TYPE_CHECKING
 
-from spot_report.metrics import absences, demography, diagnoses, symptoms
+from spot_report.metrics import absences, association, demography, diagnoses, symptoms
 from spot_report.metrics.registry import MetricRegistry
 
 if TYPE_CHECKING:
@@ -22,7 +22,13 @@ if TYPE_CHECKING:
 
 __all__ = ["DOMAINS", "default_registry"]
 
-DOMAINS: tuple[ModuleType, ...] = (demography, diagnoses, absences, symptoms)
+DOMAINS: tuple[ModuleType, ...] = (
+    demography,
+    diagnoses,
+    absences,
+    symptoms,
+    association,
+)
 
 
 def default_registry(spec: QuestionnaireSpec) -> MetricRegistry:

@@ -23,6 +23,7 @@ from spot_report.features import (
     CATEGORY_FEATURES,
     GAD7_SEVERITY_CATEGORIES,
     PHQ9_SEVERITY_CATEGORIES,
+    SYMPTOM_CATEGORIES,
     FeatureInputError,
     compute_features,
     feature_columns,
@@ -146,6 +147,7 @@ def test_complete_response_by_hand(caplog: pytest.LogCaptureFixture) -> None:
         "phq9_cutoff": True,
         "gad7_cutoff": False,
         "burdened": True,
+        "symptom_category": "severe",
         "phq9_item9": 1,
         "impairment": 2,
         "diagnosis": True,
@@ -167,6 +169,17 @@ def test_columns_and_dtypes_follow_the_contract() -> None:
     assert features["phq9_severity"].cat.ordered
     assert tuple(features["phq9_severity"].cat.categories) == PHQ9_SEVERITY_CATEGORIES
     assert tuple(features["gad7_severity"].cat.categories) == GAD7_SEVERITY_CATEGORIES
+    category = features["symptom_category"]
+    assert category.cat.ordered
+    assert (
+        tuple(category.cat.categories)
+        == SYMPTOM_CATEGORIES
+        == (
+            "mildnone",
+            "moderate",
+            "severe",
+        )
+    )
     assert set(CATEGORY_FEATURES) | set(BOOLEAN_FEATURES) | set(
         integer_features(SPEC)
     ) == set(feature_columns(SPEC))
@@ -235,10 +248,24 @@ def test_gad7_severity_and_cutoff_at_band_boundaries(
 # --- a scale with one empty item ------------------------------------------------------
 
 # The complete response has PHQ-9 12 and GAD-7 6: without PHQ-9, burdened cannot be
-# determined (GAD-7 is below its cut-off); without GAD-7, PHQ-9 alone decides it.
+# determined (GAD-7 is below its cut-off), nor the symptom category; without GAD-7,
+# PHQ-9 alone decides both.
 EMPTY_ITEM_CASES = [
-    (PHQ9[3], {"phq9_sum", "phq9_severity", "phq9_cutoff", "burdened"}),
-    (PHQ9[8], {"phq9_sum", "phq9_severity", "phq9_cutoff", "burdened", "phq9_item9"}),
+    (
+        PHQ9[3],
+        {"phq9_sum", "phq9_severity", "phq9_cutoff", "burdened", "symptom_category"},
+    ),
+    (
+        PHQ9[8],
+        {
+            "phq9_sum",
+            "phq9_severity",
+            "phq9_cutoff",
+            "burdened",
+            "symptom_category",
+            "phq9_item9",
+        },
+    ),
     (GAD7[0], {"gad7_sum", "gad7_severity", "gad7_cutoff"}),
     (RES[9], {"res_sum"}),
     (EXHAUSTION[1], {"sbi_exhaustion_sum", "sbi_total_sum"}),
@@ -306,6 +333,42 @@ def test_burdened_truth_table(
         assert burdened is pd.NA
     else:
         assert burdened == expected
+
+
+# (PHQ-9 sum, GAD-7 sum, symptom category); None means the score is missing.
+SYMPTOM_CATEGORY_TABLE = [
+    (0, 0, "mildnone"),
+    (4, 4, "mildnone"),
+    (5, 0, "moderate"),
+    (0, 5, "moderate"),
+    (9, 9, "moderate"),
+    (10, 0, "severe"),
+    (0, 10, "severe"),
+    (27, 21, "severe"),
+    (12, None, "severe"),  # the present score decides although the other is missing
+    (None, 10, "severe"),
+    (9, None, None),  # the missing score could be 10 or more
+    (0, None, None),
+    (None, 4, None),
+    (None, None, None),
+]
+
+
+@pytest.mark.parametrize(("phq9", "gad7", "expected"), SYMPTOM_CATEGORY_TABLE)
+def test_symptom_category_truth_table(
+    phq9: int | None, gad7: int | None, expected: str | None
+) -> None:
+    row: Row = {}
+    for columns, total in ((PHQ9, phq9), (GAD7, gad7)):
+        if total is None:
+            row |= spread(columns, 9, 3) | {columns[0]: None}
+        else:
+            row |= spread(columns, total, 3)
+    category = compute_features(responses(row), SPEC).at[0, "symptom_category"]
+    if expected is None:
+        assert category is pd.NA or pd.isna(category)
+    else:
+        assert category == expected
 
 
 # --- an empty multi-select option -----------------------------------------------------
