@@ -1,0 +1,1705 @@
+{
+  "header": {
+    "dataset": "synthetic_500",
+    "environment": "Python 3.12.16, pandas 2.3.2, numpy 2.2.6, matplotlib 3.10.5, openpyxl 3.1.5",
+    "excluded": {
+      "diagnoses.count.andereDiag": "counts non-empty free-text answers",
+      "diagnoses.help.count.OTHER": "counts non-empty free-text answers",
+      "diagnoses.help.pct.OTHER": "counts non-empty free-text answers",
+      "diagnoses.pct.andereDiag": "counts non-empty free-text answers",
+      "diagnoses.treatment.count.OTHER": "counts non-empty free-text answers",
+      "diagnoses.treatment.pct.OTHER": "counts non-empty free-text answers"
+    },
+    "generated_by": "previous program, commit c464e3e",
+    "generator": "tools/legacy_baseline.py",
+    "rounding": {
+      "count": "exact integer",
+      "percent": "value: percentage of numerator/denominator rounded half-up (decimal.Decimal) to `decimals`; unrounded: exact percentage",
+      "statistic": "value: Python format() to `decimals` (round half to even on the binary float); unrounded: the float the previous program formatted; decimals null: not shown as text, value unrounded"
+    },
+    "schema_version": 1,
+    "source": "synthetic_500.xlsx"
+  },
+  "values": {
+    "absences.bucket.count.FE01": {
+      "kind": "count",
+      "value": 74
+    },
+    "absences.bucket.count.FE05": {
+      "kind": "count",
+      "value": 45
+    },
+    "absences.bucket.count.FE10": {
+      "kind": "count",
+      "value": 44
+    },
+    "absences.bucket.count.FE20": {
+      "kind": "count",
+      "value": 19
+    },
+    "absences.bucket.pct.FE01": {
+      "decimals": 0,
+      "denominator": 182,
+      "kind": "percent",
+      "numerator": 74,
+      "unrounded": 40.65934065934066,
+      "value": 41
+    },
+    "absences.bucket.pct.FE05": {
+      "decimals": 0,
+      "denominator": 182,
+      "kind": "percent",
+      "numerator": 45,
+      "unrounded": 24.725274725274726,
+      "value": 25
+    },
+    "absences.bucket.pct.FE10": {
+      "decimals": 0,
+      "denominator": 182,
+      "kind": "percent",
+      "numerator": 44,
+      "unrounded": 24.175824175824175,
+      "value": 24
+    },
+    "absences.bucket.pct.FE20": {
+      "decimals": 0,
+      "denominator": 182,
+      "kind": "percent",
+      "numerator": 19,
+      "unrounded": 10.43956043956044,
+      "value": 10
+    },
+    "absences.top.n": {
+      "kind": "count",
+      "value": 182
+    },
+    "absences.top.pct": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 182,
+      "unrounded": 36.4,
+      "value": 36
+    },
+    "assoc.by_level.Gym1.mildnone.known_diag": {
+      "kind": "count",
+      "value": 3
+    },
+    "assoc.by_level.Gym1.mildnone.treated": {
+      "kind": "count",
+      "value": 2
+    },
+    "assoc.by_level.Gym1.mildnone.unknown_diag": {
+      "kind": "count",
+      "value": 17
+    },
+    "assoc.by_level.Gym1.moderate.known_diag": {
+      "kind": "count",
+      "value": 12
+    },
+    "assoc.by_level.Gym1.moderate.treated": {
+      "kind": "count",
+      "value": 8
+    },
+    "assoc.by_level.Gym1.moderate.unknown_diag": {
+      "kind": "count",
+      "value": 51
+    },
+    "assoc.by_level.Gym1.severe.known_diag": {
+      "kind": "count",
+      "value": 14
+    },
+    "assoc.by_level.Gym1.severe.treated": {
+      "kind": "count",
+      "value": 12
+    },
+    "assoc.by_level.Gym1.severe.unknown_diag": {
+      "kind": "count",
+      "value": 68
+    },
+    "assoc.by_level.Gym2.mildnone.known_diag": {
+      "kind": "count",
+      "value": 5
+    },
+    "assoc.by_level.Gym2.mildnone.treated": {
+      "kind": "count",
+      "value": 2
+    },
+    "assoc.by_level.Gym2.mildnone.unknown_diag": {
+      "kind": "count",
+      "value": 18
+    },
+    "assoc.by_level.Gym2.moderate.known_diag": {
+      "kind": "count",
+      "value": 4
+    },
+    "assoc.by_level.Gym2.moderate.treated": {
+      "kind": "count",
+      "value": 2
+    },
+    "assoc.by_level.Gym2.moderate.unknown_diag": {
+      "kind": "count",
+      "value": 46
+    },
+    "assoc.by_level.Gym2.severe.known_diag": {
+      "kind": "count",
+      "value": 10
+    },
+    "assoc.by_level.Gym2.severe.treated": {
+      "kind": "count",
+      "value": 6
+    },
+    "assoc.by_level.Gym2.severe.unknown_diag": {
+      "kind": "count",
+      "value": 63
+    },
+    "assoc.by_level.Gym3.mildnone.known_diag": {
+      "kind": "count",
+      "value": 2
+    },
+    "assoc.by_level.Gym3.mildnone.treated": {
+      "kind": "count",
+      "value": 2
+    },
+    "assoc.by_level.Gym3.mildnone.unknown_diag": {
+      "kind": "count",
+      "value": 19
+    },
+    "assoc.by_level.Gym3.moderate.known_diag": {
+      "kind": "count",
+      "value": 4
+    },
+    "assoc.by_level.Gym3.moderate.treated": {
+      "kind": "count",
+      "value": 3
+    },
+    "assoc.by_level.Gym3.moderate.unknown_diag": {
+      "kind": "count",
+      "value": 27
+    },
+    "assoc.by_level.Gym3.severe.known_diag": {
+      "kind": "count",
+      "value": 7
+    },
+    "assoc.by_level.Gym3.severe.treated": {
+      "kind": "count",
+      "value": 5
+    },
+    "assoc.by_level.Gym3.severe.unknown_diag": {
+      "kind": "count",
+      "value": 38
+    },
+    "assoc.by_level.Gym4.mildnone.known_diag": {
+      "kind": "count",
+      "value": 3
+    },
+    "assoc.by_level.Gym4.mildnone.treated": {
+      "kind": "count",
+      "value": 2
+    },
+    "assoc.by_level.Gym4.mildnone.unknown_diag": {
+      "kind": "count",
+      "value": 19
+    },
+    "assoc.by_level.Gym4.moderate.known_diag": {
+      "kind": "count",
+      "value": 3
+    },
+    "assoc.by_level.Gym4.moderate.treated": {
+      "kind": "count",
+      "value": 0
+    },
+    "assoc.by_level.Gym4.moderate.unknown_diag": {
+      "kind": "count",
+      "value": 27
+    },
+    "assoc.by_level.Gym4.severe.known_diag": {
+      "kind": "count",
+      "value": 8
+    },
+    "assoc.by_level.Gym4.severe.treated": {
+      "kind": "count",
+      "value": 8
+    },
+    "assoc.by_level.Gym4.severe.unknown_diag": {
+      "kind": "count",
+      "value": 32
+    },
+    "assoc.overlap.moderate_no_diag_n": {
+      "kind": "count",
+      "value": 151
+    },
+    "assoc.overlap.symp_and_diag_n": {
+      "kind": "count",
+      "value": 39
+    },
+    "assoc.overlap.symp_diag_treated_n": {
+      "kind": "count",
+      "value": 31
+    },
+    "assoc.overlap.symp_no_diag_n": {
+      "kind": "count",
+      "value": 201
+    },
+    "assoc.table_all.mildnone.known_diag": {
+      "kind": "count",
+      "value": 13
+    },
+    "assoc.table_all.mildnone.treated": {
+      "kind": "count",
+      "value": 8
+    },
+    "assoc.table_all.mildnone.unknown_diag": {
+      "kind": "count",
+      "value": 73
+    },
+    "assoc.table_all.moderate.known_diag": {
+      "kind": "count",
+      "value": 23
+    },
+    "assoc.table_all.moderate.treated": {
+      "kind": "count",
+      "value": 13
+    },
+    "assoc.table_all.moderate.unknown_diag": {
+      "kind": "count",
+      "value": 151
+    },
+    "assoc.table_all.severe.known_diag": {
+      "kind": "count",
+      "value": 39
+    },
+    "assoc.table_all.severe.treated": {
+      "kind": "count",
+      "value": 31
+    },
+    "assoc.table_all.severe.unknown_diag": {
+      "kind": "count",
+      "value": 201
+    },
+    "burnout.sbi.mean.cynicism": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 17.582,
+      "value": 17.58
+    },
+    "burnout.sbi.mean.exhaustion": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 14.058,
+      "value": 14.06
+    },
+    "burnout.sbi.mean.total": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 31.64,
+      "value": 31.64
+    },
+    "burnout.sbi.sd.cynicism": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 3.91176172069811,
+      "value": 3.91
+    },
+    "burnout.sbi.sd.exhaustion": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 3.3046144939928794,
+      "value": 3.3
+    },
+    "burnout.sbi.sd.total": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 5.981467705490321,
+      "value": 5.98
+    },
+    "demography.age_chart.count.12": {
+      "kind": "count",
+      "value": 19
+    },
+    "demography.age_chart.count.13": {
+      "kind": "count",
+      "value": 30
+    },
+    "demography.age_chart.count.14": {
+      "kind": "count",
+      "value": 86
+    },
+    "demography.age_chart.count.15": {
+      "kind": "count",
+      "value": 110
+    },
+    "demography.age_chart.count.16": {
+      "kind": "count",
+      "value": 114
+    },
+    "demography.age_chart.count.17": {
+      "kind": "count",
+      "value": 72
+    },
+    "demography.age_chart.count.18": {
+      "kind": "count",
+      "value": 33
+    },
+    "demography.age_chart.count.19": {
+      "kind": "count",
+      "value": 20
+    },
+    "demography.age_chart.count.20": {
+      "kind": "count",
+      "value": 16
+    },
+    "demography.all": {
+      "kind": "count",
+      "value": 500
+    },
+    "demography.gender.count.D": {
+      "kind": "count",
+      "value": 14
+    },
+    "demography.gender.count.M": {
+      "kind": "count",
+      "value": 252
+    },
+    "demography.gender.count.W": {
+      "kind": "count",
+      "value": 234
+    },
+    "demography.gender.pct.D": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 14,
+      "unrounded": 2.8,
+      "value": 3
+    },
+    "demography.gender.pct.M": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 252,
+      "unrounded": 50.4,
+      "value": 50
+    },
+    "demography.gender.pct.W": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 234,
+      "unrounded": 46.8,
+      "value": 47
+    },
+    "demography.level.count.Gym1": {
+      "kind": "count",
+      "value": 165
+    },
+    "demography.level.count.Gym2": {
+      "kind": "count",
+      "value": 146
+    },
+    "demography.level.count.Gym3": {
+      "kind": "count",
+      "value": 97
+    },
+    "demography.level.count.Gym4": {
+      "kind": "count",
+      "value": 92
+    },
+    "demography.level.pct.Gym1": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 165,
+      "unrounded": 33.0,
+      "value": 33
+    },
+    "demography.level.pct.Gym2": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 146,
+      "unrounded": 29.2,
+      "value": 29
+    },
+    "demography.level.pct.Gym3": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 97,
+      "unrounded": 19.4,
+      "value": 19
+    },
+    "demography.level.pct.Gym4": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 92,
+      "unrounded": 18.4,
+      "value": 18
+    },
+    "diagnoses.count.ADHS": {
+      "kind": "count",
+      "value": 3
+    },
+    "diagnoses.count.Angst": {
+      "kind": "count",
+      "value": 30
+    },
+    "diagnoses.count.BiPo": {
+      "kind": "count",
+      "value": 2
+    },
+    "diagnoses.count.Bord": {
+      "kind": "count",
+      "value": 0
+    },
+    "diagnoses.count.Dep": {
+      "kind": "count",
+      "value": 30
+    },
+    "diagnoses.count.Esss": {
+      "kind": "count",
+      "value": 3
+    },
+    "diagnoses.count.PTBS": {
+      "kind": "count",
+      "value": 3
+    },
+    "diagnoses.count.Schizo": {
+      "kind": "count",
+      "value": 2
+    },
+    "diagnoses.help.count.BERA": {
+      "kind": "count",
+      "value": 5
+    },
+    "diagnoses.help.count.HAUS": {
+      "kind": "count",
+      "value": 5
+    },
+    "diagnoses.help.count.KIND": {
+      "kind": "count",
+      "value": 5
+    },
+    "diagnoses.help.count.KLIN": {
+      "kind": "count",
+      "value": 0
+    },
+    "diagnoses.help.count.NIEM": {
+      "kind": "count",
+      "value": 5
+    },
+    "diagnoses.help.count.PSYA": {
+      "kind": "count",
+      "value": 19
+    },
+    "diagnoses.help.count.PSYO": {
+      "kind": "count",
+      "value": 22
+    },
+    "diagnoses.help.count.SCHU": {
+      "kind": "count",
+      "value": 5
+    },
+    "diagnoses.help.count.SELB": {
+      "kind": "count",
+      "value": 5
+    },
+    "diagnoses.help.pct.BERA": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 5,
+      "unrounded": 6.666666666666667,
+      "value": 7
+    },
+    "diagnoses.help.pct.HAUS": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 5,
+      "unrounded": 6.666666666666667,
+      "value": 7
+    },
+    "diagnoses.help.pct.KIND": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 5,
+      "unrounded": 6.666666666666667,
+      "value": 7
+    },
+    "diagnoses.help.pct.KLIN": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 0,
+      "unrounded": 0.0,
+      "value": 0
+    },
+    "diagnoses.help.pct.NIEM": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 5,
+      "unrounded": 6.666666666666667,
+      "value": 7
+    },
+    "diagnoses.help.pct.PSYA": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 19,
+      "unrounded": 25.333333333333332,
+      "value": 25
+    },
+    "diagnoses.help.pct.PSYO": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 22,
+      "unrounded": 29.333333333333332,
+      "value": 29
+    },
+    "diagnoses.help.pct.SCHU": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 5,
+      "unrounded": 6.666666666666667,
+      "value": 7
+    },
+    "diagnoses.help.pct.SELB": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 5,
+      "unrounded": 6.666666666666667,
+      "value": 7
+    },
+    "diagnoses.help_upset.K1.PSYO": {
+      "kind": "count",
+      "value": 22
+    },
+    "diagnoses.help_upset.K2.PSYA": {
+      "kind": "count",
+      "value": 19
+    },
+    "diagnoses.help_upset.K3.empty": {
+      "kind": "count",
+      "value": 0
+    },
+    "diagnoses.help_upset.K4.empty": {
+      "kind": "count",
+      "value": 0
+    },
+    "diagnoses.help_upset.K5.empty": {
+      "kind": "count",
+      "value": 0
+    },
+    "diagnoses.help_upset.K6.empty": {
+      "kind": "count",
+      "value": 0
+    },
+    "diagnoses.help_usage.n0": {
+      "kind": "count",
+      "value": 9
+    },
+    "diagnoses.help_usage.n1": {
+      "kind": "count",
+      "value": 66
+    },
+    "diagnoses.help_usage.n2": {
+      "kind": "count",
+      "value": 0
+    },
+    "diagnoses.help_usage.n3": {
+      "kind": "count",
+      "value": 0
+    },
+    "diagnoses.help_usage.n4p": {
+      "kind": "count",
+      "value": 0
+    },
+    "diagnoses.help_usage.p0": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 9,
+      "unrounded": 12.0,
+      "value": 12
+    },
+    "diagnoses.help_usage.p1": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 66,
+      "unrounded": 88.0,
+      "value": 88
+    },
+    "diagnoses.help_usage.p2": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 0,
+      "unrounded": 0.0,
+      "value": 0
+    },
+    "diagnoses.help_usage.p3": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 0,
+      "unrounded": 0.0,
+      "value": 0
+    },
+    "diagnoses.help_usage.p4p": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 0,
+      "unrounded": 0.0,
+      "value": 0
+    },
+    "diagnoses.pct.ADHS": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 3,
+      "unrounded": 0.6,
+      "value": 1
+    },
+    "diagnoses.pct.Angst": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 30,
+      "unrounded": 6.0,
+      "value": 6
+    },
+    "diagnoses.pct.BiPo": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 2,
+      "unrounded": 0.4,
+      "value": 0
+    },
+    "diagnoses.pct.Bord": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 0,
+      "unrounded": 0.0,
+      "value": 0
+    },
+    "diagnoses.pct.Dep": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 30,
+      "unrounded": 6.0,
+      "value": 6
+    },
+    "diagnoses.pct.Esss": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 3,
+      "unrounded": 0.6,
+      "value": 1
+    },
+    "diagnoses.pct.PTBS": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 3,
+      "unrounded": 0.6,
+      "value": 1
+    },
+    "diagnoses.pct.Schizo": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 2,
+      "unrounded": 0.4,
+      "value": 0
+    },
+    "diagnoses.top.n": {
+      "kind": "count",
+      "value": 75
+    },
+    "diagnoses.top.pct": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 75,
+      "unrounded": 15.0,
+      "value": 15
+    },
+    "diagnoses.treatment.count.MEDI": {
+      "kind": "count",
+      "value": 42
+    },
+    "diagnoses.treatment.count.NOT": {
+      "kind": "count",
+      "value": 11
+    },
+    "diagnoses.treatment.count.STAT": {
+      "kind": "count",
+      "value": 0
+    },
+    "diagnoses.treatment.count.THER": {
+      "kind": "count",
+      "value": 52
+    },
+    "diagnoses.treatment.pct.MEDI": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 42,
+      "unrounded": 56.0,
+      "value": 56
+    },
+    "diagnoses.treatment.pct.NOT": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 11,
+      "unrounded": 14.666666666666666,
+      "value": 15
+    },
+    "diagnoses.treatment.pct.STAT": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 0,
+      "unrounded": 0.0,
+      "value": 0
+    },
+    "diagnoses.treatment.pct.THER": {
+      "decimals": 0,
+      "denominator": 75,
+      "kind": "percent",
+      "numerator": 52,
+      "unrounded": 69.33333333333333,
+      "value": 69
+    },
+    "resilience.res.all.mean": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 23.848,
+      "value": 23.85
+    },
+    "resilience.res.all.n": {
+      "kind": "count",
+      "value": 500
+    },
+    "resilience.res.all.sd": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 6.688974567265378,
+      "value": 6.69
+    },
+    "resilience.res.burdened.mean": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 21.3375,
+      "value": 21.34
+    },
+    "resilience.res.burdened.n": {
+      "kind": "count",
+      "value": 240
+    },
+    "resilience.res.burdened.sd": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 6.658955180838688,
+      "value": 6.66
+    },
+    "resilience.res.hist.count.0": {
+      "kind": "count",
+      "value": 0
+    },
+    "resilience.res.hist.count.1": {
+      "kind": "count",
+      "value": 0
+    },
+    "resilience.res.hist.count.10": {
+      "kind": "count",
+      "value": 3
+    },
+    "resilience.res.hist.count.11": {
+      "kind": "count",
+      "value": 6
+    },
+    "resilience.res.hist.count.12": {
+      "kind": "count",
+      "value": 6
+    },
+    "resilience.res.hist.count.13": {
+      "kind": "count",
+      "value": 10
+    },
+    "resilience.res.hist.count.14": {
+      "kind": "count",
+      "value": 10
+    },
+    "resilience.res.hist.count.15": {
+      "kind": "count",
+      "value": 15
+    },
+    "resilience.res.hist.count.16": {
+      "kind": "count",
+      "value": 8
+    },
+    "resilience.res.hist.count.17": {
+      "kind": "count",
+      "value": 20
+    },
+    "resilience.res.hist.count.18": {
+      "kind": "count",
+      "value": 20
+    },
+    "resilience.res.hist.count.19": {
+      "kind": "count",
+      "value": 15
+    },
+    "resilience.res.hist.count.2": {
+      "kind": "count",
+      "value": 0
+    },
+    "resilience.res.hist.count.20": {
+      "kind": "count",
+      "value": 21
+    },
+    "resilience.res.hist.count.21": {
+      "kind": "count",
+      "value": 23
+    },
+    "resilience.res.hist.count.22": {
+      "kind": "count",
+      "value": 28
+    },
+    "resilience.res.hist.count.23": {
+      "kind": "count",
+      "value": 37
+    },
+    "resilience.res.hist.count.24": {
+      "kind": "count",
+      "value": 35
+    },
+    "resilience.res.hist.count.25": {
+      "kind": "count",
+      "value": 30
+    },
+    "resilience.res.hist.count.26": {
+      "kind": "count",
+      "value": 29
+    },
+    "resilience.res.hist.count.27": {
+      "kind": "count",
+      "value": 21
+    },
+    "resilience.res.hist.count.28": {
+      "kind": "count",
+      "value": 25
+    },
+    "resilience.res.hist.count.29": {
+      "kind": "count",
+      "value": 25
+    },
+    "resilience.res.hist.count.3": {
+      "kind": "count",
+      "value": 0
+    },
+    "resilience.res.hist.count.30": {
+      "kind": "count",
+      "value": 19
+    },
+    "resilience.res.hist.count.31": {
+      "kind": "count",
+      "value": 17
+    },
+    "resilience.res.hist.count.32": {
+      "kind": "count",
+      "value": 17
+    },
+    "resilience.res.hist.count.33": {
+      "kind": "count",
+      "value": 14
+    },
+    "resilience.res.hist.count.34": {
+      "kind": "count",
+      "value": 11
+    },
+    "resilience.res.hist.count.35": {
+      "kind": "count",
+      "value": 8
+    },
+    "resilience.res.hist.count.36": {
+      "kind": "count",
+      "value": 5
+    },
+    "resilience.res.hist.count.37": {
+      "kind": "count",
+      "value": 4
+    },
+    "resilience.res.hist.count.38": {
+      "kind": "count",
+      "value": 2
+    },
+    "resilience.res.hist.count.39": {
+      "kind": "count",
+      "value": 2
+    },
+    "resilience.res.hist.count.4": {
+      "kind": "count",
+      "value": 0
+    },
+    "resilience.res.hist.count.40": {
+      "kind": "count",
+      "value": 3
+    },
+    "resilience.res.hist.count.5": {
+      "kind": "count",
+      "value": 1
+    },
+    "resilience.res.hist.count.6": {
+      "kind": "count",
+      "value": 1
+    },
+    "resilience.res.hist.count.7": {
+      "kind": "count",
+      "value": 3
+    },
+    "resilience.res.hist.count.8": {
+      "kind": "count",
+      "value": 3
+    },
+    "resilience.res.hist.count.9": {
+      "kind": "count",
+      "value": 3
+    },
+    "resilience.res.hist.n": {
+      "kind": "count",
+      "value": 500
+    },
+    "resilience.res.nonburdened.mean": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 26.165384615384614,
+      "value": 26.17
+    },
+    "resilience.res.nonburdened.n": {
+      "kind": "count",
+      "value": 260
+    },
+    "resilience.res.nonburdened.sd": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 5.8355482521887705,
+      "value": 5.84
+    },
+    "stigma.all.chart.box.Q1.median": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 4.0
+    },
+    "stigma.all.chart.box.Q1.n": {
+      "kind": "count",
+      "value": 500
+    },
+    "stigma.all.chart.box.Q1.q1": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 2.0
+    },
+    "stigma.all.chart.box.Q1.q3": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 5.0
+    },
+    "stigma.all.chart.box.Q1.whishi": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 9.0
+    },
+    "stigma.all.chart.box.Q1.whislo": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.0
+    },
+    "stigma.all.chart.box.Q2.median": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 6.0
+    },
+    "stigma.all.chart.box.Q2.n": {
+      "kind": "count",
+      "value": 500
+    },
+    "stigma.all.chart.box.Q2.q1": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 5.0
+    },
+    "stigma.all.chart.box.Q2.q3": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 7.0
+    },
+    "stigma.all.chart.box.Q2.whishi": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 9.0
+    },
+    "stigma.all.chart.box.Q2.whislo": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 2.0
+    },
+    "stigma.all.chart.box.Q3.median": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 2.0
+    },
+    "stigma.all.chart.box.Q3.n": {
+      "kind": "count",
+      "value": 500
+    },
+    "stigma.all.chart.box.Q3.q1": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.0
+    },
+    "stigma.all.chart.box.Q3.q3": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 3.0
+    },
+    "stigma.all.chart.box.Q3.whishi": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 6.0
+    },
+    "stigma.all.chart.box.Q3.whislo": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.0
+    },
+    "stigma.all.chart.box.Q4.median": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 4.0
+    },
+    "stigma.all.chart.box.Q4.n": {
+      "kind": "count",
+      "value": 500
+    },
+    "stigma.all.chart.box.Q4.q1": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 3.0
+    },
+    "stigma.all.chart.box.Q4.q3": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 6.0
+    },
+    "stigma.all.chart.box.Q4.whishi": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 9.0
+    },
+    "stigma.all.chart.box.Q4.whislo": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.0
+    },
+    "stigma.all.chart.box.Q5.median": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 3.0
+    },
+    "stigma.all.chart.box.Q5.n": {
+      "kind": "count",
+      "value": 500
+    },
+    "stigma.all.chart.box.Q5.q1": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 2.0
+    },
+    "stigma.all.chart.box.Q5.q3": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 5.0
+    },
+    "stigma.all.chart.box.Q5.whishi": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 9.0
+    },
+    "stigma.all.chart.box.Q5.whislo": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.0
+    },
+    "stigma.all.stats.mean.Q1": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 3.8,
+      "value": 3.8
+    },
+    "stigma.all.stats.mean.Q2": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 6.0,
+      "value": 6.0
+    },
+    "stigma.all.stats.mean.Q3": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 2.1,
+      "value": 2.1
+    },
+    "stigma.all.stats.mean.Q4": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 4.3,
+      "value": 4.3
+    },
+    "stigma.all.stats.mean.Q5": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 3.6,
+      "value": 3.6
+    },
+    "stigma.all.stats.sd.Q1": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 1.8939837245069966,
+      "value": 1.89
+    },
+    "stigma.all.stats.sd.Q2": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 1.7669874048724727,
+      "value": 1.77
+    },
+    "stigma.all.stats.sd.Q3": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 1.2381704778682656,
+      "value": 1.24
+    },
+    "stigma.all.stats.sd.Q4": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 1.8976834311364,
+      "value": 1.9
+    },
+    "stigma.all.stats.sd.Q5": {
+      "decimals": 2,
+      "kind": "statistic",
+      "unrounded": 2.1459754008006904,
+      "value": 2.15
+    },
+    "stigma.burdened.chart.box.Q1.median": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 4.0
+    },
+    "stigma.burdened.chart.box.Q1.n": {
+      "kind": "count",
+      "value": 240
+    },
+    "stigma.burdened.chart.box.Q1.q1": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 2.75
+    },
+    "stigma.burdened.chart.box.Q1.q3": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 5.0
+    },
+    "stigma.burdened.chart.box.Q1.whishi": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 8.0
+    },
+    "stigma.burdened.chart.box.Q1.whislo": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.0
+    },
+    "stigma.burdened.chart.box.Q2.median": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 6.0
+    },
+    "stigma.burdened.chart.box.Q2.n": {
+      "kind": "count",
+      "value": 240
+    },
+    "stigma.burdened.chart.box.Q2.q1": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 5.0
+    },
+    "stigma.burdened.chart.box.Q2.q3": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 7.0
+    },
+    "stigma.burdened.chart.box.Q2.whishi": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 9.0
+    },
+    "stigma.burdened.chart.box.Q2.whislo": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 3.0
+    },
+    "stigma.burdened.chart.box.Q3.median": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 2.0
+    },
+    "stigma.burdened.chart.box.Q3.n": {
+      "kind": "count",
+      "value": 240
+    },
+    "stigma.burdened.chart.box.Q3.q1": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.0
+    },
+    "stigma.burdened.chart.box.Q3.q3": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 3.0
+    },
+    "stigma.burdened.chart.box.Q3.whishi": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 6.0
+    },
+    "stigma.burdened.chart.box.Q3.whislo": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.0
+    },
+    "stigma.burdened.chart.box.Q4.median": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 4.0
+    },
+    "stigma.burdened.chart.box.Q4.n": {
+      "kind": "count",
+      "value": 240
+    },
+    "stigma.burdened.chart.box.Q4.q1": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 3.0
+    },
+    "stigma.burdened.chart.box.Q4.q3": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 6.0
+    },
+    "stigma.burdened.chart.box.Q4.whishi": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 9.0
+    },
+    "stigma.burdened.chart.box.Q4.whislo": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.0
+    },
+    "stigma.burdened.chart.box.Q5.median": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 3.0
+    },
+    "stigma.burdened.chart.box.Q5.n": {
+      "kind": "count",
+      "value": 240
+    },
+    "stigma.burdened.chart.box.Q5.q1": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.75
+    },
+    "stigma.burdened.chart.box.Q5.q3": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 5.0
+    },
+    "stigma.burdened.chart.box.Q5.whishi": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 9.0
+    },
+    "stigma.burdened.chart.box.Q5.whislo": {
+      "decimals": null,
+      "kind": "statistic",
+      "unrounded": null,
+      "value": 1.0
+    },
+    "symptoms.combined.top.n": {
+      "kind": "count",
+      "value": 240
+    },
+    "symptoms.combined.top.pct": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 240,
+      "unrounded": 48.0,
+      "value": 48
+    },
+    "symptoms.gad7.sev.count.mild": {
+      "kind": "count",
+      "value": 138
+    },
+    "symptoms.gad7.sev.count.minimal": {
+      "kind": "count",
+      "value": 247
+    },
+    "symptoms.gad7.sev.count.moderate": {
+      "kind": "count",
+      "value": 86
+    },
+    "symptoms.gad7.sev.count.severe": {
+      "kind": "count",
+      "value": 29
+    },
+    "symptoms.gad7.sev.diagcount.mild": {
+      "kind": "count",
+      "value": 7
+    },
+    "symptoms.gad7.sev.diagcount.minimal": {
+      "kind": "count",
+      "value": 15
+    },
+    "symptoms.gad7.sev.diagcount.moderate": {
+      "kind": "count",
+      "value": 8
+    },
+    "symptoms.gad7.sev.diagcount.severe": {
+      "kind": "count",
+      "value": 0
+    },
+    "symptoms.gad7.sev.pct.mild": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 138,
+      "unrounded": 27.6,
+      "value": 28
+    },
+    "symptoms.gad7.sev.pct.minimal": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 247,
+      "unrounded": 49.4,
+      "value": 49
+    },
+    "symptoms.gad7.sev.pct.moderate": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 86,
+      "unrounded": 17.2,
+      "value": 17
+    },
+    "symptoms.gad7.sev.pct.severe": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 29,
+      "unrounded": 5.8,
+      "value": 6
+    },
+    "symptoms.gad7.top.n": {
+      "kind": "count",
+      "value": 115
+    },
+    "symptoms.gad7.top.pct": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 115,
+      "unrounded": 23.0,
+      "value": 23
+    },
+    "symptoms.impairment.dist.count.I0": {
+      "kind": "count",
+      "value": 190
+    },
+    "symptoms.impairment.dist.count.I1": {
+      "kind": "count",
+      "value": 158
+    },
+    "symptoms.impairment.dist.count.I2": {
+      "kind": "count",
+      "value": 93
+    },
+    "symptoms.impairment.dist.count.I3": {
+      "kind": "count",
+      "value": 59
+    },
+    "symptoms.impairment.dist.pct.I0": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 190,
+      "unrounded": 38.0,
+      "value": 38
+    },
+    "symptoms.impairment.dist.pct.I1": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 158,
+      "unrounded": 31.6,
+      "value": 32
+    },
+    "symptoms.impairment.dist.pct.I2": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 93,
+      "unrounded": 18.6,
+      "value": 19
+    },
+    "symptoms.impairment.dist.pct.I3": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 59,
+      "unrounded": 11.8,
+      "value": 12
+    },
+    "symptoms.impairment.top.n": {
+      "kind": "count",
+      "value": 152
+    },
+    "symptoms.impairment.top.pct": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 152,
+      "unrounded": 30.4,
+      "value": 30
+    },
+    "symptoms.phq9.sev.count.mild": {
+      "kind": "count",
+      "value": 150
+    },
+    "symptoms.phq9.sev.count.minimal": {
+      "kind": "count",
+      "value": 179
+    },
+    "symptoms.phq9.sev.count.mod_severe": {
+      "kind": "count",
+      "value": 63
+    },
+    "symptoms.phq9.sev.count.moderate": {
+      "kind": "count",
+      "value": 99
+    },
+    "symptoms.phq9.sev.count.severe": {
+      "kind": "count",
+      "value": 9
+    },
+    "symptoms.phq9.sev.diagcount.mild": {
+      "kind": "count",
+      "value": 7
+    },
+    "symptoms.phq9.sev.diagcount.minimal": {
+      "kind": "count",
+      "value": 11
+    },
+    "symptoms.phq9.sev.diagcount.mod_severe": {
+      "kind": "count",
+      "value": 6
+    },
+    "symptoms.phq9.sev.diagcount.moderate": {
+      "kind": "count",
+      "value": 6
+    },
+    "symptoms.phq9.sev.diagcount.severe": {
+      "kind": "count",
+      "value": 0
+    },
+    "symptoms.phq9.sev.pct.mild": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 150,
+      "unrounded": 30.0,
+      "value": 30
+    },
+    "symptoms.phq9.sev.pct.minimal": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 179,
+      "unrounded": 35.8,
+      "value": 36
+    },
+    "symptoms.phq9.sev.pct.mod_severe": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 63,
+      "unrounded": 12.6,
+      "value": 13
+    },
+    "symptoms.phq9.sev.pct.moderate": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 99,
+      "unrounded": 19.8,
+      "value": 20
+    },
+    "symptoms.phq9.sev.pct.severe": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 9,
+      "unrounded": 1.8,
+      "value": 2
+    },
+    "symptoms.phq9.top.n": {
+      "kind": "count",
+      "value": 171
+    },
+    "symptoms.phq9.top.pct": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 171,
+      "unrounded": 34.2,
+      "value": 34
+    },
+    "symptoms.suicidal.dist.count.S0": {
+      "kind": "count",
+      "value": 207
+    },
+    "symptoms.suicidal.dist.count.S1": {
+      "kind": "count",
+      "value": 170
+    },
+    "symptoms.suicidal.dist.count.S2": {
+      "kind": "count",
+      "value": 93
+    },
+    "symptoms.suicidal.dist.count.S3": {
+      "kind": "count",
+      "value": 30
+    },
+    "symptoms.suicidal.dist.pct.S0": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 207,
+      "unrounded": 41.4,
+      "value": 41
+    },
+    "symptoms.suicidal.dist.pct.S1": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 170,
+      "unrounded": 34.0,
+      "value": 34
+    },
+    "symptoms.suicidal.dist.pct.S2": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 93,
+      "unrounded": 18.6,
+      "value": 19
+    },
+    "symptoms.suicidal.dist.pct.S3": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 30,
+      "unrounded": 6.0,
+      "value": 6
+    },
+    "symptoms.suicidal.top.n": {
+      "kind": "count",
+      "value": 123
+    },
+    "symptoms.suicidal.top.pct": {
+      "decimals": 0,
+      "denominator": 500,
+      "kind": "percent",
+      "numerator": 123,
+      "unrounded": 24.6,
+      "value": 25
+    }
+  }
+}
