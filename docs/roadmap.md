@@ -3,7 +3,8 @@
 Milestones are worked on in order. Each task has a roadmap id (`R01`, `R02`, …). When a
 task becomes a GitHub issue, the issue title starts with its roadmap id; GitHub's own
 issue numbers are independent of these ids. Acceptance criteria are the definition of
-done.
+done. Ids are never renumbered: a task added later gets the next free id and is placed
+where it belongs, so ids are not always in reading order.
 
 ---
 
@@ -64,18 +65,27 @@ done.
   required; optional `responses.counts`.
 - Readers for LimeSurvey CSV (`code`/`short`) and XLSX, both returning the same
   normalised DataFrame (codes stripped, numeric scales as numbers, empty → NA).
+- The CSV format (delimiter, encoding, BOM, heading format) is taken from the CSV
+  exports with dummy answers in the synthetic data folder named in `CLAUDE.local.md`.
+  They are used only to read off the format: neither the files nor their headings are
+  copied into the repository. CSV test fixtures are generated from the XLSX fixtures in
+  that format.
 - **Done when:** the same dataset as CSV and XLSX produces identical DataFrames.
 
 ### R09 Validation
 - Checks: required columns present, answer codes within the allowed set, numeric values
-  within range, duplicate response ids. Findings contain column code, rule and count,
-  never response values or row contents.
+  within range, duplicate response ids, no empty cells in always-shown questions
+  (architecture D12). Findings contain column code, rule and count, never response
+  values or row contents.
 - `spot-report validate <bundle>` prints the findings; exit code 3 on errors.
 - **Done when:** a fixture with injected errors produces the expected findings.
 
 ### R10 Bundle archive
-- Successful runs copy the bundle to `SPOT_ARCHIVE_DIR/<school>/<wave>/`.
-- **Done when:** a test run produces the archive copy; nothing is written inside the
+- Successful runs copy the bundle to `SPOT_ARCHIVE_DIR/<school>/<wave>/<seq>/`. An
+  existing copy is never overwritten; a new bundle for the same school and wave gets the
+  next sequence number (architecture D13).
+- **Done when:** a test run produces the archive copy; a second run for the same school
+  and wave adds `002/` and leaves `001/` unchanged; nothing is written inside the
   repository.
 
 ---
@@ -91,8 +101,12 @@ done.
 ### R12 Derived features
 - `features.py`: PHQ-9 and GAD-7 sum scores and severity buckets, cut-off flags,
   "burdened" flag, diagnosis yes/no, any treatment, RES sum score, SBI subscale sums.
-  Missing-data rules documented in docstrings.
-- **Done when:** unit tests cover edge cases (all items missing, some items missing).
+- No missing-item rule (architecture D12): scores need all items. A missing item never
+  becomes a score; it raises an error, since validation should have rejected it.
+  Unticked multi-select options and conditionally hidden questions are handled as
+  defined in the questionnaire spec.
+- **Done when:** unit tests cover complete responses, an incomplete scale (rejected,
+  not scored) and conditional and multi-select questions.
 
 ### R13 Legacy parity baseline
 - Run the previous program locally (path in `CLAUDE.local.md`) on every fixture and
@@ -168,9 +182,20 @@ done.
 ### R29 Report definition and structure
 - `reports/initial.py`: section list, title page, table of contents, methods section.
 
+### R51 Content pack from the previous report
+- Work happens in the private content pack repository (path in `CLAUDE.local.md`), not
+  in this repository. Fill it from the previous Word template and the previous program:
+  section templates with the German texts, `labels.yaml`, `references.yaml`, in the
+  structure of architecture §8 and the demo content pack.
+- Nothing from the content pack is copied into this repository.
+- **Done when:** every section of the previous report has its template, labels and
+  references in the content pack, and Johannes has reviewed the content pack. Until
+  then no report uses it (architecture D15).
+
 ### R30 – R37 Sections (one task each, same order as M2)
 - Each section: content-pack template, context building, charts, demo placeholder.
   Charts as in the previous report (including the burnout/resilience scatter plot).
+- "Real content" is the content pack from R51, used only after Johannes has reviewed it.
 - **Done when (each):** the section renders with real content locally and with
   placeholder content in CI.
 
@@ -193,8 +218,9 @@ done.
 ## M7 Production on the server
 
 The automation script lives in its own repository (architecture §2.1). Tasks R40–R42
-are carried out there, not in this repository. The old Word-based generator stays in
-use until the new report has been approved (R38).
+and R52 are carried out there, not in this repository. The old Word-based generator
+stays in use until the new report has been approved (R38) and free-text answers reach
+SPOT separately (R52).
 
 ### R40 Automation script under version control
 - Put `spot_automation.py` into its own private repository. Move hard-coded e-mail
@@ -211,7 +237,18 @@ use until the new report has been approved (R38).
 - **Done when:** for a registered test survey (`TEST_SID`), the script writes a bundle
   that `spot-report validate` accepts.
 
+### R52 Free-text answers for manual review
+- The automation script writes the free-text answers of a survey to a separate file
+  for manual review by SPOT (architecture D14). The previous report contained them, so
+  this must work before the new generator replaces the old one.
+- The file never goes to `spot-report`, into a log or into any repository. Its format
+  and how it reaches SPOT are decided in this task.
+- **Done when:** for a registered test survey (`TEST_SID`), the script produces the
+  free-text file next to the bundle and SPOT receives it.
+
 ### R42 Calling the new generator
+- Depends on R52: the switch to the new generator happens only once free-text answers
+  reach SPOT separately.
 - Call `spot-report build <bundle> --out <dir>`; read `result.json`.
 - Retry only the LimeSurvey export, not the generator; exit codes 3 and 4 are final and
   produce an error e-mail with the message from `result.json`.
@@ -270,14 +307,15 @@ Last milestone. Design requirements in architecture §4.1.
 
 ### R50 Recompute
 - `spot-report recompute` rebuilds snapshots from archived bundles, e.g. after the
-  quality rules or metric definitions change.
+  quality rules or metric definitions change. It uses the latest archived copy of each
+  wave, the one the stored snapshot points to (architecture D13).
 
 ---
 
 ## Later
 
-- Free-text answers: separate document, reviewed by a SPOT person before sending.
-  Not started until the procedure is decided.
+- Free-text answers to schools: how answers reviewed by SPOT (R52) are passed on to
+  schools. Not started until the procedure is decided.
 - AI summary of free-text answers (requires privacy assessment first).
 - Trend charts over three or more waves.
 - Dashboard (separate project) reading the SQLite store.
