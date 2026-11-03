@@ -198,6 +198,17 @@ points to the latest copy, the one its snapshot was computed from. This makes it
 possible to recompute snapshots later when a metric definition changes. There is no
 retention limit for archived bundles.
 
+Only `manifest.json` and the responses file named in it are copied, byte for byte;
+other files next to them (e.g. the free-text file, D14) are never archived. The copy is
+written to a hidden temporary directory and renamed to the next free number, so an
+interrupted run leaves no incomplete `<seq>/` and concurrent runs cannot take the same
+number. The next number is the highest all-digit directory name plus one (gaps and other
+entries are ignored), padded to three digits and simply longer after `999`.
+`school.id` and `wave.label` become directory names, so they must match
+`[A-Za-z0-9][A-Za-z0-9._-]*` (at most 100 characters); anything else is rejected before
+anything is written. This is an input rule, not a privacy rule. Whether `build` requires
+`SPOT_ARCHIVE_DIR` or skips archiving when it is unset is decided with the CLI (R28).
+
 ## 4. Pipeline
 
 ```
