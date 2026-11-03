@@ -621,12 +621,18 @@ Conventions of `store/sqlite_store.py` (standard library `sqlite3`, no ORM):
 - **`list_waves(school_id)`** returns `WaveInfo` headers ordered by `fieldwork_end`,
   earliest first; waves with equal `fieldwork_end` are ordered by `label` (plain text
   order). An unknown school has no waves.
+- **`list_schools()`** returns `SchoolInfo(id, name)` for every school in the store,
+  ordered by id (plain text order). Together with `list_waves` it backs
+  `spot-report snapshot list`.
 - **`created_at`** is the time of the last save of the wave. It is store bookkeeping,
   not part of `Snapshot`: it is reported in `WaveInfo` and does not take part in the
   save/load round trip (`save_snapshot` accepts it as an argument for tests).
 
 Running the program again for the same school and wave replaces that wave's snapshot.
-`spot-report snapshot export` writes a snapshot as JSON for inspection.
+`spot-report snapshot export` writes a snapshot as JSON for inspection (section 11).
+`Snapshot.to_dict()` is that JSON object: the metadata in a fixed key order, dates as
+ISO text, absent optional fields as `null`, and `metrics` as the `MetricSet` object of
+section 6.3. `created_at` is not part of it.
 
 ### 6.5 Feature table
 
@@ -776,9 +782,21 @@ spot-report build <bundle> [--report-type auto|initial|followup]
 spot-report build --responses FILE --school ID --wave LABEL --fieldwork-end DATE
                   --questionnaire-version V [...]
 spot-report validate <bundle>
-spot-report snapshot list   [--school ID]
-spot-report snapshot export --school ID --wave LABEL
+spot-report snapshot list   --store PATH [--school ID]
+spot-report snapshot export --store PATH --school ID --wave LABEL
 ```
+
+The snapshot commands take the store path explicitly (`--store` is required; there is
+no default location) and open it with `create=False`, so a missing
+file is an error and is never created. `snapshot list` prints one line per wave
+(`key=value` fields: school, wave, fieldwork dates, questionnaire version, metrics
+version, save time, school name), schools ordered by id and waves by fieldwork end;
+without `--school` it lists all schools, and an empty store prints `No snapshots`.
+`snapshot export` writes the snapshot (section 6.4) as indented UTF-8 JSON to standard
+output and nothing else; redirect it to keep it. A missing or unreadable store, an
+unsupported schema version, or an unknown school or wave gives a one-line message on
+standard error (store file name, school id, wave label; never metric values) and exit
+code 3.
 
 Outputs per run in `<out>/<school>/<wave>/`: `report.pdf`, `report.html` (for
 debugging), `run.log` and `result.json`. `result.json` is the machine-readable result

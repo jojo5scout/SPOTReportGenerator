@@ -24,6 +24,7 @@ from spot_report.metrics import (
 from spot_report.questionnaire import load_spec
 from spot_report.store import (
     SCHEMA_VERSION,
+    SchoolInfo,
     Snapshot,
     SnapshotNotFoundError,
     SQLiteStore,
@@ -523,3 +524,16 @@ def test_kind_column_holds_the_metric_kind(
     assert kinds["test.kinds.summary"] == "summary"
     assert kinds["test.kinds.distribution"] == "distribution"
     assert kinds["test.kinds.patterns"] == "pattern_counts"
+
+
+def test_list_schools_is_ordered_by_id_and_empty_for_a_new_store(
+    store: SQLiteStore,
+) -> None:
+    assert store.list_schools() == ()
+    store.save_snapshot(make_snapshot(school_id="zeta", school_name="Z School"))
+    store.save_snapshot(make_snapshot(school_id="alpha", school_name="A School"))
+    store.save_snapshot(make_snapshot(school_id="alpha", wave_label="2027"))
+    assert store.list_schools() == (
+        SchoolInfo(id="alpha", name="Gymnasium Bäume"),
+        SchoolInfo(id="zeta", name="Z School"),
+    )

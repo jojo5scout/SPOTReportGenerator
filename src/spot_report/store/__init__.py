@@ -5,6 +5,7 @@ from __future__ import annotations
 from spot_report.store.snapshot import Snapshot, SnapshotError
 from spot_report.store.sqlite_store import (
     SCHEMA_VERSION,
+    SchoolInfo,
     SnapshotNotFoundError,
     SQLiteStore,
     StoreError,
@@ -16,6 +17,7 @@ from spot_report.store.sqlite_store import (
 __all__ = [
     "SCHEMA_VERSION",
     "SQLiteStore",
+    "SchoolInfo",
     "Snapshot",
     "SnapshotError",
     "SnapshotNotFoundError",

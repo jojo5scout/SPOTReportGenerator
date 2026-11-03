@@ -31,6 +31,7 @@ from spot_report.store.snapshot import Snapshot
 __all__ = [
     "SCHEMA_VERSION",
     "SQLiteStore",
+    "SchoolInfo",
     "SnapshotNotFoundError",
     "StoreError",
     "StoreVersionError",
@@ -52,6 +53,14 @@ class StoreVersionError(StoreError):
 
 class SnapshotNotFoundError(StoreError, LookupError):
     """No snapshot is stored for the requested school and wave."""
+
+
+@dataclass(frozen=True)
+class SchoolInfo:
+    """A school with at least one stored snapshot, as listed by ``list_schools``."""
+
+    id: str
+    name: str
 
 
 @dataclass(frozen=True)
@@ -199,6 +208,16 @@ class SQLiteStore:
                 f"Stored snapshot of school {school_id!r}, wave {wave_label!r} "
                 "is unreadable"
             ) from exc
+
+    def list_schools(self) -> tuple[SchoolInfo, ...]:
+        """All schools in the store, ordered by id (plain text order)."""
+        try:
+            rows = self._connection.execute(
+                "SELECT id, name FROM school ORDER BY id"
+            ).fetchall()
+        except sqlite3.Error as exc:
+            raise StoreError("Cannot read schools") from exc
+        return tuple(SchoolInfo(id=school_id, name=name) for school_id, name in rows)
 
     def list_waves(self, school_id: str) -> tuple[WaveInfo, ...]:
         """Waves of a school ordered by ``fieldwork_end`` (earliest first).

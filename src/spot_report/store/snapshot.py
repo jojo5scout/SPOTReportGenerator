@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from typing import Any
 
 from spot_report.metrics.types import MetricSet
 
@@ -70,6 +71,28 @@ class Snapshot:
             raise SnapshotError("limesurvey_id must be an integer or None")
         if not isinstance(self.metrics, MetricSet):
             raise SnapshotError("metrics must be a MetricSet")
+
+    def to_dict(self) -> dict[str, Any]:
+        """JSON-compatible dict: the metadata (dates as ISO text) and ``metrics``.
+
+        Keys come in a fixed order; ``metrics`` is the :class:`MetricSet` object
+        (ids sorted). The store's ``created_at`` is not part of a snapshot.
+        """
+        start = self.fieldwork_start
+        return {
+            "school_id": self.school_id,
+            "school_name": self.school_name,
+            "wave_label": self.wave_label,
+            "fieldwork_start": start.isoformat() if start is not None else None,
+            "fieldwork_end": self.fieldwork_end.isoformat(),
+            "limesurvey_id": self.limesurvey_id,
+            "questionnaire_version": self.questionnaire_version,
+            "program_version": self.program_version,
+            "metrics_version": self.metrics_version,
+            "quality_rules_version": self.quality_rules_version,
+            "archive_path": self.archive_path,
+            "metrics": self.metrics.to_dict(),
+        }
 
 
 def _is_int(value: object) -> bool:
