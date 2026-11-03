@@ -59,7 +59,7 @@ from spot_report.questionnaire import QuestionKind, QuestionnaireSpec, load_spec
 MANIFEST_NAME = "manifest.json"
 
 _STRING = pd.StringDtype(na_value=pd.NA)
-_INTEGER = re.compile(r"[+-]?[0-9]+")
+INTEGER_PATTERN = re.compile(r"[+-]?[0-9]+")
 _Cells = list[str | None]
 
 
@@ -232,7 +232,7 @@ def _series(values: _Cells, *, as_integer: bool) -> pd.Series:
     if not as_integer:
         return text
     present = text.dropna()
-    if not present.str.fullmatch(_INTEGER).all():
+    if not present.str.fullmatch(INTEGER_PATTERN).all():
         return text
     try:
         return text.astype(pd.Int64Dtype())
