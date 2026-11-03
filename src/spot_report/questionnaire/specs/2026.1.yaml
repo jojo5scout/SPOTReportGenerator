@@ -38,6 +38,7 @@ single_choice:
     yes_code: "Ja"
   FEHLTAGQ0:
     codes: ["FEJA", "FENE"]
+    yes_code: "FEJA"
   FEHLTAGQ1:
     # Empty when FEHLTAGQ0 is not FEJA (D12: not shown).
     codes: ["FE01", "FE05", "FE10", "FE20"]

@@ -468,6 +468,13 @@ respondents. A ticked "nobody" option (`none_option` in the spec, `DIAGQ2[NIEM]`
 overrides the other options of that question in the help-source count and combinations.
 Free-text columns are never read (D14).
 
+Absences (`absences.*`) applies D12 to a question and its follow-up: `FEHLTAGQ0` (yes
+code from the spec) gives one `Proportion` of the respondents who answered it, and
+`FEHLTAGQ1` gives one `Distribution` over the spec's bucket codes among the respondents
+who answered it. Whether the respondent said yes to `FEHLTAGQ0` is not checked (display
+conditions are not modelled); an empty follow-up answer, including that of respondents
+who were not shown the question, counts in `n_missing`.
+
 ### 6.3 MetricSet and snapshot
 
 A `MetricSet` is an immutable mapping of metric ids to metric values, validated on
