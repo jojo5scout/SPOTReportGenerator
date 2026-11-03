@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from spot_report.metrics.compute import compute_metrics
+from spot_report.metrics.domains import default_registry
 from spot_report.metrics.registry import (
     METRICS_VERSION,
     MetricDefinition,
@@ -35,6 +37,8 @@ __all__ = [
     "Proportion",
     "RegistryError",
     "Summary",
+    "compute_metrics",
+    "default_registry",
     "metric_from_dict",
     "metric_from_json",
     "validate_metric_id",
