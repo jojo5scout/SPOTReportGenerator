@@ -21,7 +21,8 @@ def compute_metrics(
     """Run every domain's ``compute`` and merge the results into one metric set.
 
     A metric id produced by two domains raises :class:`MetricError`; the merged set is
-    checked against the default registry (every id registered, with its kind).
+    checked against the default registry of ``spec`` (every id registered, with its
+    kind).
     """
     merged: dict[str, Metric] = {}
     for module in DOMAINS:
@@ -30,5 +31,5 @@ def compute_metrics(
                 raise MetricError(f"Metric id {metric_id!r} is computed twice")
             merged[metric_id] = metric
     result = MetricSet(merged)
-    default_registry().check(result)
+    default_registry(spec).check(result)
     return result

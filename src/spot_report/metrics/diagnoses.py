@@ -70,12 +70,12 @@ from spot_report.metrics.types import (
     PatternCounts,
     Proportion,
 )
-from spot_report.questionnaire import Question, load_spec
+from spot_report.questionnaire import Question
 
 if TYPE_CHECKING:
     from spot_report.questionnaire import QuestionnaireSpec
 
-__all__ = ["DEFINITIONS", "USAGE_CATEGORIES", "compute", "definitions_for"]
+__all__ = ["USAGE_CATEGORIES", "compute", "definitions"]
 
 DOMAIN = "diagnoses"
 SINCE = "2026.1"
@@ -112,7 +112,7 @@ def option_name(group: str, question: Question) -> str:
     return question.code.removeprefix(f"{group}[").removesuffix("]")
 
 
-def definitions_for(spec: QuestionnaireSpec) -> tuple[MetricDefinition, ...]:
+def definitions(spec: QuestionnaireSpec) -> tuple[MetricDefinition, ...]:
     """The metric definitions of this domain for the options of ``spec``."""
 
     def definition(metric_id: str, kind: str, *items: str) -> MetricDefinition:
@@ -145,9 +145,6 @@ def definitions_for(spec: QuestionnaireSpec) -> tuple[MetricDefinition, ...]:
             for q in treatments
         ),
     )
-
-
-DEFINITIONS: tuple[MetricDefinition, ...] = definitions_for(load_spec(SINCE))
 
 
 def compute(

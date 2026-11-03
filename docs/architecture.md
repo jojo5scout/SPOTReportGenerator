@@ -284,7 +284,7 @@ SPOTReportGenerator/
 │   ├── metrics/
 │   │   ├── types.py                # Proportion, Summary, Distribution, …
 │   │   ├── registry.py             # metric ids + metadata
-│   │   ├── domains.py              # DOMAINS tuple, default_registry()
+│   │   ├── domains.py              # DOMAINS tuple, default_registry(spec)
 │   │   ├── compute.py              # compute_metrics(): all domains, merged
 │   │   └── <domain>.py             # demography, diagnoses, absences, symptoms,
 │   │                               # association, stigma, burnout, resilience
@@ -435,7 +435,9 @@ snapshots.
 
 Every domain has a module `metrics/<domain>.py` with two public names:
 
-- `DEFINITIONS: tuple[MetricDefinition, ...]`, one entry per metric id of the domain;
+- `definitions(spec) -> tuple[MetricDefinition, ...]`, one entry per metric id of the
+  domain for that questionnaire spec (a pure function without file access; ids that
+  depend on the options of a multi-select question are derived from the spec);
 - `compute(responses, features, spec) -> MetricSet`, a pure function of the validated
   responses, the feature table (section 6.5) and the questionnaire spec. It takes
   answer codes and ranges from the spec, never formats, writes or suppresses anything,
@@ -444,11 +446,11 @@ Every domain has a module `metrics/<domain>.py` with two public names:
   counted in `n_missing` (D12).
 
 `metrics/domains.py` lists the domain modules in the tuple `DOMAINS` and builds the
-registry from their `DEFINITIONS` (`default_registry()`). `metrics/compute.py`
+registry from their `definitions(spec)` (`default_registry(spec)`). `metrics/compute.py`
 `compute_metrics(responses, features, spec)` runs `compute` of every module in
 `DOMAINS`, merges the sets (an id produced twice raises `MetricError`) and checks the
 result with the default registry. A new domain is added to `DOMAINS` and nowhere else.
-Each domain test checks that its `DEFINITIONS` and the ids it computes agree, and
+Each domain test checks that its `definitions(spec)` and the ids it computes agree, and
 compares the numbers with the legacy baseline (section 12).
 
 Demography (`demography.gender.distribution`, `demography.level.distribution`,

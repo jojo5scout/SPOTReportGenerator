@@ -130,14 +130,14 @@ def test_age_outside_the_spec_range_is_an_error_without_values() -> None:
 
 def test_definitions_match_computed_ids_and_kinds() -> None:
     metrics = compute(frame(["M"], ["Gym1"], [12]))
-    assert {d.id for d in demography.DEFINITIONS} == set(metrics)
-    default_registry().check(metrics)
-    assert all(d.domain == "demography" for d in demography.DEFINITIONS)
-    assert all(d.since == SPEC.version for d in demography.DEFINITIONS)
+    assert {d.id for d in demography.definitions(SPEC)} == set(metrics)
+    default_registry(SPEC).check(metrics)
+    assert all(d.domain == "demography" for d in demography.definitions(SPEC))
+    assert all(d.since == SPEC.version for d in demography.definitions(SPEC))
 
 
 def test_definition_items_are_spec_columns() -> None:
-    for definition in demography.DEFINITIONS:
+    for definition in demography.definitions(SPEC):
         for item in definition.items:
             SPEC.question(item)
 

@@ -288,10 +288,10 @@ def test_small_groups_are_not_suppressed() -> None:
 
 def test_definitions_match_computed_ids_and_kinds() -> None:
     metrics = compute(frame(ROWS))
-    assert {d.id for d in diagnoses.DEFINITIONS} == set(metrics)
-    default_registry().check(metrics)
-    assert all(d.domain == "diagnoses" for d in diagnoses.DEFINITIONS)
-    assert all(d.since == SPEC.version for d in diagnoses.DEFINITIONS)
+    assert {d.id for d in diagnoses.definitions(SPEC)} == set(metrics)
+    default_registry(SPEC).check(metrics)
+    assert all(d.domain == "diagnoses" for d in diagnoses.definitions(SPEC))
+    assert all(d.since == SPEC.version for d in diagnoses.definitions(SPEC))
 
 
 def test_ids_are_the_same_whether_optional_columns_are_present() -> None:
@@ -299,7 +299,7 @@ def test_ids_are_the_same_whether_optional_columns_are_present() -> None:
 
 
 def test_definition_items_are_spec_columns() -> None:
-    for definition in diagnoses.DEFINITIONS:
+    for definition in diagnoses.definitions(SPEC):
         assert definition.items[0] == "DIAGQ0"
         for item in definition.items:
             SPEC.question(item)
@@ -307,7 +307,7 @@ def test_definition_items_are_spec_columns() -> None:
 
 def test_no_free_text_column_is_used() -> None:
     free_text = set(SPEC.free_text_columns)
-    for definition in diagnoses.DEFINITIONS:
+    for definition in diagnoses.definitions(SPEC):
         assert not free_text & set(definition.items)
 
 
@@ -315,7 +315,7 @@ def test_expected_ids() -> None:
     types = ("depr", "angs", "esst", "adhs", "ptbs", "bipo", "psyc", "bord", "other")
     helps = ("niem", "haus", "kind", "schu", "psyo", "psya", "selb", "bera", "klin")
     treatments = ("not", "medi", "ther", "stat", "other")
-    assert {d.id for d in diagnoses.DEFINITIONS} == {
+    assert {d.id for d in diagnoses.definitions(SPEC)} == {
         "diagnoses.diagnosis.reported",
         *(f"diagnoses.type.{o}" for o in types),
         *(f"diagnoses.help.{o}.diagnosed" for o in helps),
