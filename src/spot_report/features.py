@@ -76,7 +76,7 @@ from collections.abc import Sequence
 
 import pandas as pd
 
-from spot_report.questionnaire import QuestionnaireSpec
+from spot_report.questionnaire import Question, QuestionnaireSpec
 
 __all__ = [
     "BOOLEAN_FEATURES",
@@ -92,6 +92,7 @@ __all__ = [
     "compute_features",
     "feature_columns",
     "integer_features",
+    "option_selected",
     "sbi_subscale_column",
     "scale_sum",
     "severity",
@@ -282,11 +283,21 @@ def any_selected(df: pd.DataFrame, spec: QuestionnaireSpec, group: str) -> pd.Se
     for option in spec.multi_select_options(group):
         if option.none_option:
             continue
-        if option.code not in df.columns and not option.required:
-            continue
-        ticked = _string_column(df, option.code).eq(option.selected).fillna(False)
-        selected = selected | ticked.astype(pd.BooleanDtype())
+        selected = selected | option_selected(df, option)
     return selected
+
+
+def option_selected(df: pd.DataFrame, option: Question) -> pd.Series:
+    """Whether one multi-select option is ticked; ``True`` or ``False``, never ``NA``.
+
+    An empty cell is not selected (D12). An optional option column that is absent from
+    the responses counts as not selected for everyone; an absent required option is an
+    input error.
+    """
+    if option.code not in df.columns and not option.required:
+        return pd.Series(False, index=df.index, dtype=pd.BooleanDtype())
+    ticked = _string_column(df, option.code).eq(option.selected).fillna(False)
+    return ticked.astype(pd.BooleanDtype())
 
 
 # --- input access ---------------------------------------------------------------------

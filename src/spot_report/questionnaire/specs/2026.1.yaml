@@ -65,6 +65,8 @@ multi_select:
   DIAGQ2:
     selected: "Y"
     options: [NIEM, HAUS, KIND, SCHU, PSYO, PSYA, SELB, BERA]
+    # As in the previous program, NIEM ("nobody") overrides the other help sources.
+    none_option: NIEM
     optional_options: [KLIN]
   DIAGQ3:
     selected: "Y"

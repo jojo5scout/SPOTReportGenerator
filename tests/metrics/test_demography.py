@@ -142,7 +142,9 @@ def test_definition_items_are_spec_columns() -> None:
             SPEC.question(item)
 
 
-def test_compute_metrics_runs_all_domains() -> None:
+def test_compute_metrics_merges_the_domain(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Only this domain, so that the hand-made frame needs no other columns.
+    monkeypatch.setattr(compute_module, "DOMAINS", (demography,))
     responses = frame(["M", "W"], ["Gym1", "Gym2"], [12, 13])
     assert compute_metrics(responses, pd.DataFrame(index=responses.index), SPEC) == (
         compute(responses)

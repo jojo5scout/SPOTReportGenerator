@@ -27,6 +27,7 @@ from spot_report.features import (
     compute_features,
     feature_columns,
     integer_features,
+    option_selected,
 )
 from spot_report.ingest import read_csv_responses, read_responses
 from spot_report.metrics.types import Proportion
@@ -472,3 +473,14 @@ def test_fixture_formats_give_identical_features(stem: str) -> None:
     first, *others = (compute_features(_load(p), SPEC) for p in paths)
     for other in others:
         pd.testing.assert_frame_equal(first, other)
+
+
+def test_option_selected_is_never_missing() -> None:
+    df = responses({"DIAGQ2[PSYO]": "Y"}, {})
+    ticked = option_selected(df, SPEC.question("DIAGQ2[PSYO]"))
+    assert ticked.tolist() == [True, False]
+    assert not ticked.isna().any()
+    # An optional option column that is absent counts as not selected.
+    klin = SPEC.question("DIAGQ2[KLIN]")
+    assert klin.code not in df.columns
+    assert option_selected(df, klin).tolist() == [False, False]

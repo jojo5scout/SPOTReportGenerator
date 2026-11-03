@@ -17,10 +17,12 @@ from spot_report.metrics.types import (
     MetricFormatError,
     MetricIdError,
     MetricSet,
+    PatternCounts,
     Proportion,
     Summary,
     metric_from_dict,
     metric_from_json,
+    top_patterns,
     validate_metric_id,
 )
 
@@ -34,6 +36,7 @@ __all__ = [
     "MetricIdError",
     "MetricRegistry",
     "MetricSet",
+    "PatternCounts",
     "Proportion",
     "RegistryError",
     "Summary",
@@ -41,5 +44,6 @@ __all__ = [
     "default_registry",
     "metric_from_dict",
     "metric_from_json",
+    "top_patterns",
     "validate_metric_id",
 ]

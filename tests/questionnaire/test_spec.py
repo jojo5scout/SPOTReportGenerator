@@ -143,6 +143,9 @@ def test_yes_code_of_a_yes_no_question(spec: QuestionnaireSpec) -> None:
 def test_none_option_is_marked(spec: QuestionnaireSpec) -> None:
     marked = [q.code for q in spec.multi_select_options("DIAGQ3") if q.none_option]
     assert marked == ["DIAGQ3[NOT]"]
+    assert [q.code for q in spec.multi_select_options("DIAGQ2") if q.none_option] == [
+        "DIAGQ2[NIEM]"
+    ]
     assert not any(q.none_option for q in spec.multi_select_options("DIAGQ1"))
 
 

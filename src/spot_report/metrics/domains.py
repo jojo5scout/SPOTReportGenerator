@@ -11,12 +11,12 @@ from __future__ import annotations
 
 from types import ModuleType
 
-from spot_report.metrics import demography
+from spot_report.metrics import demography, diagnoses
 from spot_report.metrics.registry import MetricRegistry
 
 __all__ = ["DOMAINS", "default_registry"]
 
-DOMAINS: tuple[ModuleType, ...] = (demography,)
+DOMAINS: tuple[ModuleType, ...] = (demography, diagnoses)
 
 
 def default_registry() -> MetricRegistry:

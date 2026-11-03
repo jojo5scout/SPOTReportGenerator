@@ -104,7 +104,12 @@ def test_none_is_written_as_null() -> None:
 
 
 def test_kind_tags_match_store_column() -> None:
-    assert set(METRIC_KINDS) == {"proportion", "summary", "distribution"}
+    assert set(METRIC_KINDS) == {
+        "proportion",
+        "summary",
+        "distribution",
+        "pattern_counts",
+    }
     assert Proportion(1, 2).to_dict() == {
         "kind": "proportion",
         "k": 1,

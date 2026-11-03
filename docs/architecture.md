@@ -350,12 +350,25 @@ class Distribution:        # counts per category, in a defined order
     categories: tuple[str, ...]
     counts: tuple[int, ...]
     n_missing: int
+
+@dataclass(frozen=True)
+class PatternCounts:       # respondents per combination of selected options
+    options: tuple[str, ...]              # option codes, in option order
+    patterns: tuple[tuple[str, ...], ...] # observed combinations, canonical order
+    counts: tuple[int, ...]               # respondents per combination, each >= 1
+    n_missing: int
 ```
+
+`PatternCounts` is for multi-select questions whose combinations matter (help sources,
+ADR 0003). A combination is a tuple of option codes in option order; the empty
+combination `()` ("none of the options") is stored like any other, so `n`, the sum of
+the counts, is the number of respondents counted. Combinations are listed fewer
+options first, then by option order, so equal metrics give identical JSON.
 
 Computation conventions are fixed here because legacy parity and comparisons between
 waves depend on them: standard deviation with `ddof=1`, quantiles with the NumPy/pandas
-default method. The set of types may grow (e.g. for multi-select patterns), but every
-type must be JSON-serialisable and must contain enough information for statistical
+default method. The set of types may grow (`PatternCounts` was added for multi-select
+patterns), but every type must be JSON-serialisable and must contain enough information for statistical
 comparison (counts and denominators, or mean, SD and n).
 
 Details fixed in `metrics/types.py`:
@@ -363,6 +376,14 @@ Details fixed in `metrics/types.py`:
 - Invariants are checked on construction (non-negative integer counts, `k <= n`,
   categories unique and as many as counts, floats finite). Violations raise
   `MetricError`.
+- `PatternCounts`: options unique; every pattern is a subset of the options listed in
+  option order; patterns unique and in canonical order; counts at least 1; `n` is the
+  sum of the counts and `option_counts` (respondents per option) is derived.
+  `PatternCounts.from_selections(table, n_missing)` counts the rows of a boolean table
+  with one column per option, and `top_patterns(counts, size, k)` returns the `k` most
+  frequent combinations of exactly `size` options (count descending, ties by option
+  codes as text); the help-source chart uses it (presentation logic, nothing is
+  suppressed).
 - `Summary`: with `n == 0` all statistics are `None`; with `n == 1` the sample SD is
   undefined and `None`, the other statistics are defined; from `n == 2` all are numbers.
   Median and quartiles come from `numpy.quantile` (`linear`); no rounding.
@@ -375,8 +396,8 @@ Details fixed in `metrics/types.py`:
   respondents (no missing values; the left-out respondents are passed as `n_missing`)
   and their errors never contain values.
 - JSON: every metric converts to a dict tagged with `"kind"`
-  (`proportion | summary | distribution`, the same strings as the store's `kind`
-  column), e.g. `{"kind": "proportion", "k": 3, "n": 10, "n_missing": 1}`. `None` is
+  (`proportion | summary | distribution | pattern_counts`, the same strings as the
+  store's `kind` column), e.g. `{"kind": "proportion", "k": 3, "n": 10, "n_missing": 1}`. `None` is
   written as `null`, there is no NaN, and floats round-trip exactly. Parsing is strict
   (unknown or missing keys raise `MetricFormatError`). A new type is added to
   `METRIC_TYPES` with its own kind tag; existing payloads do not change.
@@ -434,6 +455,16 @@ Demography (`demography.gender.distribution`, `demography.level.distribution`,
 `demography.age.distribution`) sets the pattern: one `Distribution` per question, in
 spec order, with `n + n_missing` equal to the number of respondents. There is no
 separate respondent count metric; the total is that sum.
+
+Diagnoses (`diagnoses.*`) shows the group conventions for questions that apply to a
+subgroup and for multi-select questions: one `Proportion` per option; the population is
+named in the id (`...diagnosed`) when it is the respondents with a diagnosis, whose
+`n_missing` counts the respondents whose diagnosis answer is empty and who therefore
+cannot be assigned (respondents without a diagnosis are not part of the group and not
+counted as missing). The type of diagnosis keeps the previous program's denominator, all
+respondents. A ticked "nobody" option (`none_option` in the spec, `DIAGQ2[NIEM]`)
+overrides the other options of that question in the help-source count and combinations.
+Free-text columns are never read (D14).
 
 ### 6.3 MetricSet and snapshot
 
