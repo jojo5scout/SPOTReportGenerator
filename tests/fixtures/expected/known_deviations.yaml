@@ -1,0 +1,25 @@
+# Known deviations from the legacy parity baseline (ADR 0002, tests/parity.py).
+#
+# A domain task (R14-R21) that finds a difference from the previous program does not
+# fix it; it records it here and explains it in its pull request. For a recorded key,
+# assert_parity checks that the new value still equals `new` (so a later change is
+# caught) and fails if the key matches the legacy value again (stale entry).
+#
+# Fields of an entry (all required):
+#   dataset  dataset name such as synthetic_300, or "*" for every dataset
+#   key      key in tests/fixtures/expected/<dataset>.json
+#   legacy   the legacy value as shown (`value` of the entry), or null
+#   new      the new value in the units of the entry (a percentage for `percent`
+#            entries, unrounded where the entry has `unrounded`), or null
+#   task     roadmap id of the task that recorded it, e.g. R16
+#   reason   one sentence: why the new value differs and why that is intended
+#
+# Example (not a real entry):
+#   - dataset: "*"
+#     key: absences.bucket.pct.FE01
+#     legacy: 43
+#     new: 44.1
+#     task: R16
+#     reason: Denominator is the respondents who answered FEHLTAGQ1 (D12).
+
+deviations: []

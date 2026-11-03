@@ -71,3 +71,93 @@ Besides the two empty metadata columns, only the 21 multi-select option columns 
 
 These datasets are **not** a source of expected numbers: the legacy parity values
 belong in `expected/` and must be generated from a documented run, not from this file.
+
+## Legacy parity baseline (`expected/`)
+
+`expected/<dataset>.json` holds, for each XLSX fixture, the numbers the previous
+program computed from that dataset (roadmap R13, ADR 0002 in `docs/decisions/`). Only
+data-derived numbers are stored: no texts, no chart files, no warnings, no free-text
+answers and no reference values from literature. Domain tests (R14–R21) compare their
+results with these numbers through `tests/parity.py`; `tests/test_parity.py` checks
+the files.
+
+### Regenerating
+
+The files are written by `tools/legacy_baseline.py`, which needs a checkout of the
+previous program and an environment with its pinned requirements; see the script's
+docstring for the commands. It is not run in CI. Regenerate only when a fixture
+changes or the previous program is corrected, and say so in the pull request;
+`--check` reports files that are out of date. Never edit the JSON by hand.
+
+### Format
+
+```json
+{
+  "header": {
+    "schema_version": 1,
+    "dataset": "synthetic_300",
+    "source": "synthetic_300.xlsx",
+    "generated_by": "previous program, commit <short sha>",
+    "generator": "tools/legacy_baseline.py",
+    "environment": "Python ..., pandas ..., numpy ..., matplotlib ..., openpyxl ...",
+    "rounding": { "...": "how `value` was rounded, per kind" },
+    "excluded": { "<key>": "why it is not stored" }
+  },
+  "values": {
+    "demography.gender.count.M": {"kind": "count", "value": 155},
+    "demography.gender.pct.M": {"kind": "percent", "value": 52, "decimals": 0,
+      "unrounded": 51.666666666666664, "numerator": 155, "denominator": 300},
+    "burnout.sbi.mean.total": {"kind": "statistic", "value": 31.2, "decimals": 2,
+      "unrounded": 31.196666666666665},
+    "stigma.all.chart.box.Q1.median": {"kind": "statistic", "value": 4.0,
+      "decimals": null, "unrounded": null}
+  }
+}
+```
+
+Keys are the dotted paths of the previous program's report context (its own key
+names, some German), plus a few `chart` groups for numbers that only its charts show.
+The segment that names an aliased instrument is replaced by the alias (`res`).
+
+| Kind | Fields | Meaning |
+|---|---|---|
+| `count` | `value` | exact integer |
+| `percent` | `value`, `decimals`, `unrounded`, `numerator`, `denominator` | `value` is the percentage as shown (half-up rounded to `decimals`), `unrounded` the exact percentage `100 * numerator / denominator` (`null` for denominator 0, which the previous program showed as 0 %) |
+| `statistic` | `value`, `decimals`, `unrounded` | mean or SD as shown (Python `format` to `decimals`) with the float behind it; `decimals: null` means the number was not shown as text (box plot lines) and `value` is unrounded; `value: null` means undefined |
+
+### Key groups per domain
+
+| Domain (task) | Keys | Notes on the legacy computation |
+|---|---|---|
+| Demography (R14) | `demography.all`, `.gender.{count,pct}.{M,W,D}`, `.level.{count,pct}.Gym1-4`, `.age_chart.count.<age>` | percentages use all respondents as denominator (an empty answer would not be dropped) |
+| Diagnoses, help, treatment (R15) | `diagnoses.top.{n,pct}`; `.count.<type>`, `.pct.<type>`; `.help.{count,pct}.<option>`; `.help_usage.{n0..n3,n4p,p0..p3,p4p}`; `.help_upset.K1-K6.<pattern>`; `.treatment.{count,pct}.<option>` | type percentages use all respondents as denominator, help and treatment percentages the diagnosed; `help_usage` counts selected help sources per diagnosed respondent (`NIEM` counts as none; `KLIN` included); `help_upset` holds the chart's six columns (two most frequent single, pair and triple patterns of help sources, ties by pattern name, padded with `empty`), the key naming the column and its pattern joined by `+` |
+| Absences (R16) | `absences.top.{n,pct}`, `.bucket.{count,pct}.FE01/FE05/FE10/FE20` | `top` denominator: all respondents; bucket denominator: respondents with `FEJA` |
+| Symptoms (R17) | `symptoms.{phq9,gad7}.top.{n,pct}`, `.sev.{count,pct,diagcount}.<band>`; `.combined.top`; `.suicidal.{top,dist}`; `.impairment.{top,dist}` | `top`: cut-off (sum ≥ 10; item 9 and impairment ≥ 2); `diagcount`: band × depression (PHQ-9) or anxiety (GAD-7) diagnosis option; band `mod_severe` is the new `moderately_severe` |
+| Association (R18) | `assoc.overlap.*`, `assoc.table_all.<category>.<status>`, `assoc.by_level.Gym1-4.<category>.<status>` | categories `severe` (PHQ-9 or GAD-7 ≥ 10), `moderate` (either 5–9, not severe), `mildnone`; status `known_diag`, `treated` (diagnosed and any treatment option), `unknown_diag` (not diagnosed) |
+| Stigma (R19) | `stigma.all.stats.{mean,sd}.Q1-Q5`; `stigma.{all,burdened}.chart.box.Q1-Q5.{n,median,q1,q3,whislo,whishi}` | box plots from matplotlib (quartiles linear, whiskers 1.5 IQR); `burdened` = PHQ-9 or GAD-7 cut-off |
+| Burnout (R20) | `burnout.sbi.{mean,sd}.{exhaustion,cynicism,total}` | means of per-person sums |
+| Resilience (R21) | `resilience.res.{all,burdened,nonburdened}.{n,mean,sd}`, `resilience.res.hist.{n,count.<score>}` | `nonburdened`: at least one symptom score and no cut-off |
+
+### Comparing in tests
+
+```python
+from tests.parity import assert_parity, load_expected
+
+expected = load_expected("synthetic_300")  # typed access, e.g. .count(key)
+assert_parity("synthetic_300", "demography.gender.pct.M", share)  # share in [0, 1]
+```
+
+`assert_parity` takes the new, unrounded value. Counts must be equal. For a
+percentage the new value is a share and is compared as a percentage. Where the file
+has an unrounded legacy value, the new value must match it within a relative
+tolerance of 1e-9; otherwise it is rounded half-up (`decimal.Decimal`) to the legacy
+`decimals` and must equal the shown value. `None` matches only `null`.
+
+### Known deviations
+
+A difference found by a domain task is not fixed in that task. It is recorded in
+`expected/known_deviations.yaml` (dataset or `*`, key, legacy value as shown, new value
+in the units of the entry, task id, reason) and explained in the pull request. For a
+recorded key `assert_parity` requires the recorded **new** value, so later changes are
+still caught, and fails when the key matches the legacy value again (stale entry: remove
+it). The list starts empty.
