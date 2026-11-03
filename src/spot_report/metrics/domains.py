@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 from spot_report.metrics import (
     absences,
     association,
+    burnout,
     demography,
     diagnoses,
     stigma,
@@ -36,6 +37,7 @@ DOMAINS: tuple[ModuleType, ...] = (
     symptoms,
     association,
     stigma,
+    burnout,
 )
 
 
