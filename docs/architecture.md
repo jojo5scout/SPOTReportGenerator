@@ -28,8 +28,9 @@ structure, templates and texts.
   responses and calls this program with an input bundle (section 3).
 - **Delivering reports.** The program writes files. The automation script e-mails the
   finished report to SPOT; SPOT forwards it to the school.
-- **Free-text answers.** How free-text answers are passed on to schools is not decided
-  yet. Until then they are ignored by the program (section 14).
+- **Free-text answers.** The program ignores them. The automation script writes them to
+  a separate file that SPOT reviews manually (D14). How reviewed answers are passed on
+  to schools is not decided yet (section 14).
 - **The web dashboard.** It is a separate project that will read the same SQLite
   store (section 6).
 
@@ -63,6 +64,8 @@ contains server-specific configuration). Its current behaviour:
   report has been generated yet. Progress is kept in `evaluation_state.json`.
 - Exports complete responses with question codes and answer codes
   (`export_responses`, headings `code`, responses `short`).
+- Writes the free-text answers of the survey to a separate file for manual review by
+  SPOT (planned, roadmap R52, D14). They never reach this program.
 - Calls the report generator, then e-mails the report to SPOT, and sends an error
   e-mail on failure.
 - `TEST_SID=<id>` processes a single survey for testing.
@@ -136,7 +139,11 @@ Rules for the responses file:
 - Column headings are **question codes** (e.g. `PHQ9[PHQQ1]`), never question texts.
 - Cell values are **answer codes** (e.g. `0`–`3`, `M`, `Gym1`, `Y`), never answer texts.
 - The file contains **complete responses only**. Selecting them is the job of the cron
-  script (LimeSurvey export with completion status `complete`).
+  script (LimeSurvey export with completion status `complete`). In a complete response
+  every question that was shown is answered, so there are no missing items (D12). Empty
+  cells occur only for multi-select options that were not ticked and for questions
+  that were not shown because of a condition; the questionnaire spec says which
+  questions these are.
 - Supported formats: CSV as produced by the LimeSurvey RemoteControl `export_responses`
   call (headings `code`, responses `short`), and XLSX with the same structure (used by
   the existing synthetic datasets).
@@ -148,9 +155,13 @@ a bundle.
 ### Archive
 
 Every bundle that is processed successfully is copied to an archive directory outside
-the repository (`SPOT_ARCHIVE_DIR`), as `<school>/<wave>/`. The wave record in the
-store points to it. This makes it possible to recompute snapshots later when a metric
-definition changes. There is no retention limit for archived bundles.
+the repository (`SPOT_ARCHIVE_DIR`), as `<school>/<wave>/<seq>/`, where `<seq>` is a
+sequence number starting at `001`. An archived bundle is never overwritten: a new
+bundle for the same school and wave (e.g. after a corrected export) is stored next to
+the existing ones with the next sequence number (D13). The wave record in the store
+points to the latest copy, the one its snapshot was computed from. This makes it
+possible to recompute snapshots later when a metric definition changes. There is no
+retention limit for archived bundles.
 
 ## 4. Pipeline
 
@@ -385,6 +396,10 @@ infrastructure.
 The content directory is set via `SPOT_CONTENT_DIR` (default `./content`). Jinja looks
 up templates in the content pack first and falls back to `templates/`.
 
+The real content pack is a separate private repository. Its first version is built from
+the previous Word template and the previous program and is reviewed by Johannes before
+any report uses it (D15, roadmap R51).
+
 Content pack structure:
 
 ```
@@ -520,6 +535,10 @@ export (network) should be retried, not the report generation.
 | D9 | Privacy rules exactly as in the reviewed report | Reviewed by the responsible authority; changes only with SPOT approval |
 | D10 | Input bundles are archived by this program | Snapshots can be recomputed when metric definitions change; one owner for the archive |
 | D11 | Survey registry maps LimeSurvey surveys to school and wave | LimeSurvey has no notion of schools; follow-up reports need a stable school id |
+| D12 | No missing-item rule: scores are computed from complete items only; an empty cell in an always-shown question is a validation error | The automation script exports only completed responses, in which every shown question is answered; an empty item signals an export problem, not a respondent who skipped it |
+| D13 | Archived bundles are never overwritten; a new bundle for the same school and wave gets the next sequence number; the snapshot points to the latest | Every input that ever produced a report stays available and traceable |
+| D14 | Free-text answers go to a separate file written by the automation script for manual review by SPOT; this program keeps ignoring them; required before the new generator replaces the old one | The previous report contained free-text answers; they may identify students and need a human review before anything reaches a school |
+| D15 | The real content pack is a private repository, first filled from the previous Word template and program, reviewed by Johannes before use | Reuses the reviewed wording of the previous report; texts and reference values stay out of the public repository |
 
 Larger future decisions get their own ADR in `docs/decisions/`.
 
@@ -528,6 +547,6 @@ Larger future decisions get their own ADR in `docs/decisions/`.
 - Content and structure of the follow-up report.
 - Statistical method for "relevant change" between waves (e.g. confidence intervals
   for differences of proportions, Welch test for means).
-- Free-text answers: format, review by a SPOT person before sending, delivery. Not
-  implemented until decided.
+- Free-text answers: how answers reviewed by SPOT are passed on to schools (format,
+  delivery). Extraction for the review is decided (D14).
 - Response quality rules (section 4.1).
