@@ -133,6 +133,19 @@ def test_multi_select_options_are_grouped_by_question(spec: QuestionnaireSpec) -
         spec.multi_select_options("NOPE")
 
 
+def test_yes_code_of_a_yes_no_question(spec: QuestionnaireSpec) -> None:
+    assert spec.yes_code("DIAGQ0") == "Ja"
+    assert spec.question("DIAGQ0").yes_code in spec.question("DIAGQ0").codes
+    with pytest.raises(KeyError, match="not a yes/no question"):
+        spec.yes_code("DQSEX")
+
+
+def test_none_option_is_marked(spec: QuestionnaireSpec) -> None:
+    marked = [q.code for q in spec.multi_select_options("DIAGQ3") if q.none_option]
+    assert marked == ["DIAGQ3[NOT]"]
+    assert not any(q.none_option for q in spec.multi_select_options("DIAGQ1"))
+
+
 def test_metadata_and_free_text_columns(spec: QuestionnaireSpec) -> None:
     assert set(spec.metadata_columns) == {
         "id",
@@ -182,6 +195,19 @@ def test_minimal_snippet_loads() -> None:
     )
     assert spec.question("MS[THREE]").required is False
     assert spec.question("MS[other]").kind is QuestionKind.FREE_TEXT
+    assert spec.question("Q1").yes_code is None
+    assert not any(q.none_option for q in spec.multi_select_options("MS"))
+
+
+def test_yes_code_and_none_option_load() -> None:
+    data = _edited(
+        ("set", ("single_choice", "Q1", "yes_code"), "B"),
+        ("set", ("multi_select", "MS", "none_option"), "THREE"),
+    )
+    spec = spec_from_mapping(data)
+    assert spec.yes_code("Q1") == "B"
+    marked = [q.code for q in spec.multi_select_options("MS") if q.none_option]
+    assert marked == ["MS[THREE]"]
 
 
 Edit = tuple[str, tuple[str | int, ...], Any]
@@ -230,6 +256,10 @@ MALFORMED: list[tuple[Edit, str]] = [
     (("set", ("single_choice", "Q1", "codes"), ["A", "A"]), "duplicate codes"),
     (("set", ("single_choice", "Q1", "codes"), [True, False]), "string"),
     (("set", ("multi_select", "MS", "selected"), True), "selected"),
+    (("set", ("single_choice", "Q1", "yes_code"), "C"), "exactly two codes"),
+    (("set", ("single_choice", "Q1", "yes_code"), True), "yes_code"),
+    (("set", ("multi_select", "MS", "none_option"), "FOUR"), "one of the options"),
+    (("set", ("multi_select", "MS", "none_option"), ["ONE"]), "none_option"),
     (("set", ("single_choice", "Q1", "required"), "yes"), "true or false"),
     (("set", ("free_text",), {}), "list"),
     (("set", ("metadata",), "id"), "list"),
@@ -240,6 +270,15 @@ MALFORMED: list[tuple[Edit, str]] = [
 def test_malformed_snippets_are_rejected(edit: Edit, message: str) -> None:
     with pytest.raises(SpecError, match=re.escape(message)):
         spec_from_mapping(_edited(edit))
+
+
+def test_yes_code_needs_exactly_two_codes() -> None:
+    data = _edited(
+        ("append", ("single_choice", "Q1", "codes"), "C"),
+        ("set", ("single_choice", "Q1", "yes_code"), "A"),
+    )
+    with pytest.raises(SpecError, match="exactly two codes"):
+        spec_from_mapping(data)
 
 
 def test_top_level_must_be_a_mapping() -> None:

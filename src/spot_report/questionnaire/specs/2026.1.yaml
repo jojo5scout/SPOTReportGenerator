@@ -24,7 +24,8 @@ metadata:
   - startdate
   - datestamp
 
-# Single-choice questions: the set of allowed answer codes.
+# Single-choice questions: the set of allowed answer codes. `yes_code` marks a yes/no
+# question (exactly two codes) and names the code that means yes.
 single_choice:
   DQSEX:
     codes: ["M", "W", "D"]
@@ -34,6 +35,7 @@ single_choice:
     # "Ja" is stated by the previous program (it accepts several spellings of yes);
     # "Nein" is inferred from the fixtures.
     codes: ["Ja", "Nein"]
+    yes_code: "Ja"
   FEHLTAGQ0:
     codes: ["FEJA", "FENE"]
   FEHLTAGQ1:
@@ -52,7 +54,8 @@ numeric:
 
 # Multi-select questions: one column `<group>[<option>]` per option. The cell holds
 # the `selected` code when the option was ticked and is empty otherwise; empty means
-# not selected, the respondent stays in the denominator (D12).
+# not selected, the respondent stays in the denominator (D12). `none_option` names the
+# option that means "none of the other options".
 multi_select:
   DIAGQ1:
     selected: "Y"
@@ -66,6 +69,8 @@ multi_select:
   DIAGQ3:
     selected: "Y"
     options: [NOT, MEDI, THER]
+    # As in the previous program, every other option counts as a treatment.
+    none_option: NOT
     # Read by the previous program, absent from the fixtures.
     optional_options: [STAT, OTHER]
 
