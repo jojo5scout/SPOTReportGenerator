@@ -41,6 +41,11 @@ synthetic datasets only. Report texts, labels and reference values live in a sep
 private content pack; a demo content pack with placeholder texts will be provided in
 `examples/content-demo/`.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the hard rules on data and instruments, code
+conventions and the workflow.
+
 ## License
 
 [GNU Affero General Public License v3.0](LICENSE) or later.

@@ -1,0 +1,64 @@
+name: Feature or task
+description: A new feature, change or roadmap task.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a roadmap task, start the title with its roadmap id, e.g.
+        `R16 Absences` (see `docs/roadmap.md`).
+
+        This repository is public. Do not include real survey data, questionnaire item
+        texts, real names of aliased instruments (use `RES`, `STIG`), secrets or server
+        paths.
+
+  - type: input
+    id: roadmap-id
+    attributes:
+      label: Roadmap id
+      description: Leave empty if the feature is not on the roadmap yet.
+      placeholder: R16
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be possible afterwards, and why is it needed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What belongs to this task, and what explicitly does not.
+
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: Acceptance criteria that can be checked.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact
+      description: Tick what applies; it decides what the pull request must contain.
+      options:
+        - label: Touches more than one module (plan first, see `docs/architecture.md`).
+        - label: Changes the architecture (update `docs/architecture.md`, ADR if significant).
+        - label: Adds or changes metric ids (stored contract; migration needed for renames).
+        - label: Affects report texts (German, in the content pack, not in this repository).
+
+  - type: checkboxes
+    id: hard-rules
+    attributes:
+      label: Hard rules
+      options:
+        - label: >-
+            This issue contains no real survey data, item texts, real names of aliased
+            instruments, secrets or server paths, and does not propose changes to the
+            privacy rules.
+          required: true

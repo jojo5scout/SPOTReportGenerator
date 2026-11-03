@@ -1,0 +1,64 @@
+name: Bug report
+description: Something does not work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository is public. **Never paste real survey data**, response values,
+        free-text answers, questionnaire item texts, secrets or server paths. Refer to
+        aliased instruments only by their alias (`RES`, `STIG`). Reproduce problems
+        with a synthetic fixture from `tests/fixtures/` where possible.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Command line and the synthetic fixture used.
+      placeholder: |
+        uv run spot-report build --responses tests/fixtures/<file> ...
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Error output
+      description: >-
+        Traceback or messages. Remove anything that shows response values, row
+        contents or paths on a server. Column codes and counts are fine.
+      render: text
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `uv run spot-report --version`, or the commit hash.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Python version, Pango version if rendering fails.
+
+  - type: checkboxes
+    id: hard-rules
+    attributes:
+      label: Data protection
+      options:
+        - label: >-
+            This report contains no real survey data, response values, free-text
+            answers, item texts, real names of aliased instruments, secrets or server
+            paths.
+          required: true
