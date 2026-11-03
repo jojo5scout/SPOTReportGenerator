@@ -39,6 +39,15 @@ Feature columns (a contract for the metric domains)
     ``False`` only if both scores are present and below their cut-offs; ``NA``
     otherwise (one score below its cut-off and the other missing, or both missing),
     because then it cannot be determined.
+``symptom_category`` (ordered ``category``)
+    Combined symptom load, categories :data:`SYMPTOM_CATEGORIES` ``mildnone`` <
+    ``moderate`` < ``severe``, from the two sums in three-valued logic: ``severe`` if
+    at least one score is at or above 10 (``burdened`` is ``True``, even if the other
+    score is missing); otherwise, if both scores are present, ``moderate`` if at least
+    one is at or above :data:`SYMPTOM_MODERATE_FROM` (5) and ``mildnone`` if both are
+    below it; ``NA`` when ``burdened`` is ``NA``, because a missing score could be 10
+    or more. (The names are those of the previous program; ``moderate`` here is the
+    5-9 band, not the PHQ-9 band ``moderate``.)
 ``phq9_item9`` (``Int64``)
     The ninth PHQ-9 item (the ninth column of the scale in the spec), passed through.
 ``impairment`` (``Int64``)
@@ -63,6 +72,9 @@ Intentional differences from the previous program
   ``moderately_severe`` replaces ``mod_severe``.
 * Cut-offs and ``burdened`` are ``NA`` when undeterminable (the previous program used
   ``False``; it kept a separate ``any_valid_symptoms`` flag as denominator).
+* ``symptom_category`` is ``NA`` unless the present scores determine it; the previous
+  program put every respondent with at least one valid score into a category (a
+  respondent with one score below 5 and the other missing counted as ``mildnone``).
 * ``diagnosis`` compares with the spec's yes code only (the previous program accepted
   several spellings of yes) and is ``NA`` when empty (previously ``False``).
 * No warnings are returned for absent columns: required columns are guaranteed by
@@ -87,6 +99,9 @@ __all__ = [
     "PHQ9_CUTOFF",
     "PHQ9_SEVERITY_CATEGORIES",
     "PHQ9_SEVERITY_DTYPE",
+    "SYMPTOM_CATEGORIES",
+    "SYMPTOM_CATEGORY_DTYPE",
+    "SYMPTOM_MODERATE_FROM",
     "FeatureInputError",
     "any_selected",
     "compute_features",
@@ -96,6 +111,7 @@ __all__ = [
     "sbi_subscale_column",
     "scale_sum",
     "severity",
+    "symptom_category",
     "yes_no",
 ]
 
@@ -115,6 +131,10 @@ TREATMENT_QUESTION = "DIAGQ3"
 PHQ9_CUTOFF = 10
 GAD7_CUTOFF = 10
 
+#: Lowest score of the "mild" band of both scales (5-9); the lower bound of the
+#: ``moderate`` symptom category.
+SYMPTOM_MODERATE_FROM = 5
+
 #: Severity bands as (category code, lowest score of the band), in ascending order.
 #: The codes are stored as ``Distribution`` categories; never rename them.
 PHQ9_SEVERITY_BANDS: tuple[tuple[str, int], ...] = (
@@ -133,6 +153,10 @@ GAD7_SEVERITY_BANDS: tuple[tuple[str, int], ...] = (
 
 PHQ9_SEVERITY_CATEGORIES: tuple[str, ...] = tuple(c for c, _ in PHQ9_SEVERITY_BANDS)
 GAD7_SEVERITY_CATEGORIES: tuple[str, ...] = tuple(c for c, _ in GAD7_SEVERITY_BANDS)
+#: Categories of ``symptom_category``, lowest load first. Stored (metric ids and
+#: ``Distribution`` categories of the association domain); never rename them.
+SYMPTOM_CATEGORIES: tuple[str, ...] = ("mildnone", "moderate", "severe")
+SYMPTOM_CATEGORY_DTYPE = pd.CategoricalDtype(list(SYMPTOM_CATEGORIES), ordered=True)
 PHQ9_SEVERITY_DTYPE = pd.CategoricalDtype(list(PHQ9_SEVERITY_CATEGORIES), ordered=True)
 GAD7_SEVERITY_DTYPE = pd.CategoricalDtype(list(GAD7_SEVERITY_CATEGORIES), ordered=True)
 
@@ -145,7 +169,11 @@ BOOLEAN_FEATURES: tuple[str, ...] = (
     "diagnosis",
     "treatment_any",
 )
-CATEGORY_FEATURES: tuple[str, ...] = ("phq9_severity", "gad7_severity")
+CATEGORY_FEATURES: tuple[str, ...] = (
+    "phq9_severity",
+    "gad7_severity",
+    "symptom_category",
+)
 
 
 class FeatureInputError(ValueError):
@@ -188,6 +216,7 @@ def feature_columns(spec: QuestionnaireSpec) -> tuple[str, ...]:
         "phq9_cutoff",
         "gad7_cutoff",
         "burdened",
+        "symptom_category",
         "phq9_item9",
         "impairment",
         "diagnosis",
@@ -211,6 +240,8 @@ def compute_features(df: pd.DataFrame, spec: QuestionnaireSpec) -> pd.DataFrame:
     gad7_sum = scale_sum(df, spec.scale(GAD7_SCALE).columns)
     phq9_cutoff = phq9_sum.ge(PHQ9_CUTOFF)
     gad7_cutoff = gad7_sum.ge(GAD7_CUTOFF)
+    # Kleene OR: True | NA is True, False | NA is NA.
+    burdened = phq9_cutoff | gad7_cutoff
 
     sbi = spec.scale(SBI_SCALE)
     sbi_subscales = {
@@ -225,8 +256,8 @@ def compute_features(df: pd.DataFrame, spec: QuestionnaireSpec) -> pd.DataFrame:
         "gad7_severity": severity(gad7_sum, GAD7_SEVERITY_BANDS, GAD7_SEVERITY_DTYPE),
         "phq9_cutoff": phq9_cutoff,
         "gad7_cutoff": gad7_cutoff,
-        # Kleene OR: True | NA is True, False | NA is NA.
-        "burdened": phq9_cutoff | gad7_cutoff,
+        "burdened": burdened,
+        "symptom_category": symptom_category(phq9_sum, gad7_sum, burdened),
         "phq9_item9": _integer_column(df, phq9.columns[PHQ9_ITEM9_POSITION - 1]),
         "impairment": _integer_column(df, spec.question(IMPAIRMENT_QUESTION).code),
         "diagnosis": yes_no(df, spec, DIAGNOSIS_QUESTION),
@@ -263,6 +294,29 @@ def severity(
         labels=[code for code, _ in bands],
     )
     return buckets.astype(dtype)
+
+
+def symptom_category(
+    phq9_sum: pd.Series, gad7_sum: pd.Series, burdened: pd.Series
+) -> pd.Series:
+    """The symptom category of each respondent; ``NA`` where the scores do not decide.
+
+    ``severe`` where ``burdened`` is ``True``. Where it is ``False`` both scores are
+    present and below 10, so ``moderate`` (a score of 5 or more) and ``mildnone`` are
+    exact. Where it is ``NA`` a missing score could still be 10 or more: ``NA``.
+    """
+    determined = burdened.notna()
+    severe = burdened.fillna(False).astype(bool)
+    raised = (
+        (phq9_sum.ge(SYMPTOM_MODERATE_FROM) | gad7_sum.ge(SYMPTOM_MODERATE_FROM))
+        .fillna(False)
+        .astype(bool)
+    )
+    labels = pd.Series(pd.NA, index=burdened.index, dtype=object)
+    labels[determined] = "mildnone"
+    labels[determined & raised] = "moderate"
+    labels[severe] = "severe"
+    return labels.astype(SYMPTOM_CATEGORY_DTYPE)
 
 
 def yes_no(df: pd.DataFrame, spec: QuestionnaireSpec, code: str) -> pd.Series:
