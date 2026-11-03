@@ -286,6 +286,7 @@ SPOTReportGenerator/
 │   │   ├── registry.py             # metric ids + metadata
 │   │   ├── domains.py              # DOMAINS tuple, default_registry(spec)
 │   │   ├── compute.py              # compute_metrics(): all domains, merged
+│   │   ├── stats.py                # small pure helpers, e.g. box plot whiskers
 │   │   └── <domain>.py             # demography, diagnoses, absences, symptoms,
 │   │                               # association, stigma, burnout, resilience
 │   ├── store/
@@ -487,6 +488,18 @@ subgroups of the diagnosis metrics they count only the group, and `DIAGQ0` is no
 consulted (the previous report's definition). The two option codes are constants of the
 module, the column codes are looked up in the spec. The threshold 2 for item 9 and
 impairment is the previous report's definition as well.
+
+Stigma (`stigma.stig.item1` … `item5`, and the same with the suffix `.burdened`) holds
+one `Summary` per item of the `STIG` scale, in the order of the spec's columns (the
+items are not combined into a score). The subgroup is `burdened == True`; respondents
+with `burdened` `NA` or `False` are not part of it and not counted as missing. Within a
+group an empty item answer is `n_missing` (D12). The box plot of the previous report
+needs one more number per side, the whisker ends (the most extreme value within 1.5
+interquartile ranges of the box). These are chart geometry, not metrics: the chart
+computes them from the person-level values it may read (section 10) with
+`metrics.stats.box_whiskers`, a pure helper kept next to the other statistics
+conventions so that `present` can import it. `n`, median and quartiles of the box are
+fields of the `Summary`.
 
 Association (`association.*`) cross-tabulates the feature `symptom_category` with the
 diagnosis status, for all respondents and per school level. The status is a partition of

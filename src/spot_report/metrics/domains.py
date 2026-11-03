@@ -14,7 +14,14 @@ from __future__ import annotations
 from types import ModuleType
 from typing import TYPE_CHECKING
 
-from spot_report.metrics import absences, association, demography, diagnoses, symptoms
+from spot_report.metrics import (
+    absences,
+    association,
+    demography,
+    diagnoses,
+    stigma,
+    symptoms,
+)
 from spot_report.metrics.registry import MetricRegistry
 
 if TYPE_CHECKING:
@@ -28,6 +35,7 @@ DOMAINS: tuple[ModuleType, ...] = (
     absences,
     symptoms,
     association,
+    stigma,
 )
 
 
