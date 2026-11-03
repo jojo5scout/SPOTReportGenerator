@@ -1,7 +1,8 @@
-"""Ingest: input bundle manifest, readers and structural validation."""
+"""Ingest: input bundle manifest, readers and structural validation, archive."""
 
 from __future__ import annotations
 
+from spot_report.ingest.archive import ArchiveError, archive_bundle
 from spot_report.ingest.manifest import (
     Manifest,
     ManifestError,
@@ -33,6 +34,7 @@ from spot_report.ingest.validate import (
 )
 
 __all__ = [
+    "ArchiveError",
     "Dataset",
     "Finding",
     "Manifest",
@@ -46,6 +48,7 @@ __all__ = [
     "Severity",
     "Survey",
     "Wave",
+    "archive_bundle",
     "has_errors",
     "load_bundle",
     "load_manifest",
