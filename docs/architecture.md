@@ -451,6 +451,33 @@ CREATE TABLE metric (
 Running the program again for the same school and wave replaces that wave's snapshot.
 `spot-report snapshot export` writes a snapshot as JSON for inspection.
 
+### 6.5 Feature table
+
+`features.compute_features(responses, spec)` derives one row per respondent, with the
+same index as the responses. It is a pure function (no I/O, logging, warnings or
+aggregates); column and answer codes come from the questionnaire spec, which names the
+yes code of a yes/no question (`yes_code`) and the "none of the others" option of a
+multi-select question (`none_option`). Missing is always an explicit `NA` (nullable
+dtypes), following D12:
+
+| Column | Dtype | Meaning; `NA` when |
+|---|---|---|
+| `phq9_sum`, `gad7_sum` | `Int64` | sum of the items; any item empty |
+| `phq9_severity`, `gad7_severity` | ordered `category` | standard bands (PHQ-9 `minimal` 0–4, `mild` 5–9, `moderate` 10–14, `moderately_severe` 15–19, `severe` 20–27; GAD-7 the same up to `severe` 15–21); sum `NA` |
+| `phq9_cutoff`, `gad7_cutoff` | `boolean` | sum ≥ 10; sum `NA` |
+| `burdened` | `boolean` | PHQ-9 or GAD-7 cut-off, three-valued: `True` if one cut-off is `True`, `False` only if both are `False`; `NA` otherwise |
+| `phq9_item9`, `impairment` | `Int64` | PHQ-9 item 9 and `SIPHQ`, passed through; empty |
+| `diagnosis` | `boolean` | `DIAGQ0` is the yes code; empty |
+| `treatment_any` | `boolean` | any `DIAGQ3` option except the none option selected; never `NA` (empty option = not selected) |
+| `res_sum` | `Int64` | RES sum; any item empty |
+| `sbi_<subscale>_sum`, `sbi_total_sum` | `Int64` | SBI subscale sums (subscale name in lowercase) and total; any item of that (sub)scale empty |
+
+The column names and severity category codes are a contract for the metric domains
+and, through `Distribution` categories, for stored snapshots. Display conditions are
+not modelled: restricting a denominator to a subgroup (e.g. treatment among diagnosed
+respondents) is a decision of the metric. A metric leaves a respondent with `NA` out
+of `n` and counts them in `n_missing`. The feature table is never persisted.
+
 ## 7. Report types and selection
 
 A `ReportDefinition` lists the sections of a report, the template for each section and

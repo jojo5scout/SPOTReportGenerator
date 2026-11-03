@@ -2,8 +2,11 @@
 
 A spec lists every column the survey export may contain: its code, the allowed answer
 codes or numeric range, the scale it belongs to and which columns are multi-select
-options. It holds codes and scoring facts only, never item texts. Display conditions
-are not modelled (architecture D12).
+options. For a yes/no question it may name the code that means yes, and for a
+multi-select question the option that means "none of the others"; the derived features
+(``features.py``) read these instead of hard-coding answer codes. It holds codes and
+scoring facts only, never item texts. Display conditions are not modelled
+(architecture D12).
 
 Specs live as YAML files in the ``specs`` folder next to this module and are loaded
 with :func:`load_spec`. The structure is validated on load.
@@ -43,7 +46,7 @@ class QuestionKind(StrEnum):
 
 
 class Scoring(StrEnum):
-    SUM = "sum"  # score is the sum of the items (computed later, R12)
+    SUM = "sum"  # score is the sum of the items (computed in features.py)
     ITEMS = "items"  # items are analysed one by one, no total
 
 
@@ -54,9 +57,12 @@ class Question:
     ``codes`` holds the allowed answer codes of a single-choice column;
     ``min_value`` and ``max_value`` the inclusive integer range of a numeric column;
     ``selected`` the code that marks a ticked multi-select option (empty cell means
-    not selected). ``group`` names the question a column belongs to (multi-select
-    options and their free-text "other" column), ``scale`` the scale a numeric item
-    belongs to. Optional columns (``required=False``) may be absent from a file.
+    not selected). ``yes_code`` is set on a single-choice question with exactly two
+    codes and names the one that means yes (the other one means no). ``none_option``
+    marks the multi-select option that means "none of the other options". ``group``
+    names the question a column belongs to (multi-select options and their free-text
+    "other" column), ``scale`` the scale a numeric item belongs to. Optional columns
+    (``required=False``) may be absent from a file.
     """
 
     code: str
@@ -68,6 +74,8 @@ class Question:
     group: str | None = None
     scale: str | None = None
     required: bool = True
+    yes_code: str | None = None
+    none_option: bool = False
 
 
 @dataclass(frozen=True)
@@ -152,6 +160,13 @@ class QuestionnaireSpec:
             if scale.name == name:
                 return scale
         raise KeyError(f"Unknown scale: {name}")
+
+    def yes_code(self, code: str) -> str:
+        """The answer code that means yes in the yes/no question ``code``."""
+        question = self.question(code)
+        if question.yes_code is None:
+            raise KeyError(f"Column {code} is not a yes/no question")
+        return question.yes_code
 
     def multi_select_options(self, group: str) -> tuple[Question, ...]:
         """The option columns of a multi-select question, in spec order."""
@@ -245,13 +260,15 @@ def spec_from_mapping(data: object) -> QuestionnaireSpec:
 
     for code, body in _mapping(top.get("single_choice", {}), "single_choice").items():
         where = f"single_choice.{code}"
-        fields = _mapping(body, where, allowed={"codes", "required"})
+        fields = _mapping(body, where, allowed={"codes", "required", "yes_code"})
+        codes = _codes(fields.get("codes"), f"{where}.codes")
         questions.append(
             Question(
                 _str(code, where),
                 QuestionKind.SINGLE_CHOICE,
-                codes=_codes(fields.get("codes"), f"{where}.codes"),
+                codes=codes,
                 required=_bool(fields.get("required", True), f"{where}.required"),
+                yes_code=_yes_code(fields.get("yes_code"), codes, f"{where}.yes_code"),
             )
         )
 
@@ -303,13 +320,20 @@ def _multi_select(raw: object) -> list[Question]:
     for group, body in _mapping(raw, "multi_select").items():
         where = f"multi_select.{group}"
         fields = _mapping(
-            body, where, allowed={"selected", "options", "optional_options"}
+            body,
+            where,
+            allowed={"selected", "options", "optional_options", "none_option"},
         )
         selected = _str(fields.get("selected"), f"{where}.selected")
         required = _string_list(fields.get("options"), f"{where}.options")
         optional = _string_list(
             fields.get("optional_options", []), f"{where}.optional_options"
         )
+        none_option = fields.get("none_option")
+        if none_option is not None and (
+            _str(none_option, f"{where}.none_option") not in (*required, *optional)
+        ):
+            raise SpecError(f"{where}.none_option must be one of the options")
         questions.extend(
             Question(
                 f"{group}[{option}]",
@@ -317,6 +341,7 @@ def _multi_select(raw: object) -> list[Question]:
                 selected=selected,
                 group=_str(group, where),
                 required=is_required,
+                none_option=option == none_option,
             )
             for options, is_required in ((required, True), (optional, False))
             for option in options
@@ -415,6 +440,15 @@ def _codes(value: object, where: str) -> tuple[str, ...]:
     if len(set(codes)) != len(codes):
         raise SpecError(f"{where} has duplicate codes")
     return tuple(codes)
+
+
+def _yes_code(value: object, codes: tuple[str, ...], where: str) -> str | None:
+    if value is None:
+        return None
+    yes = _str(value, where)
+    if len(codes) != 2 or yes not in codes:
+        raise SpecError(f"{where} must be one of exactly two codes")
+    return yes
 
 
 def _int_range(low: object, high: object, where: str) -> tuple[int, int]:
