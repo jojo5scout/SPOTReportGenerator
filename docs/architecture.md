@@ -139,11 +139,17 @@ Rules for the responses file:
 - Column headings are **question codes** (e.g. `PHQ9[PHQQ1]`), never question texts.
 - Cell values are **answer codes** (e.g. `0`–`3`, `M`, `Gym1`, `Y`), never answer texts.
 - The file contains **complete responses only**. Selecting them is the job of the cron
-  script (LimeSurvey export with completion status `complete`). In a complete response
-  every question that was shown is answered, so there are no missing items (D12). Empty
-  cells occur only for multi-select options that were not ticked and for questions
-  that were not shown because of a condition; the questionnaire spec says which
-  questions these are.
+  script (LimeSurvey export with completion status `complete`).
+- **Empty cells** are never an error and never a warning (D12). Until the quality stage
+  exists (section 4.1), responses are assumed to be clean, and an empty cell has exactly
+  two meanings:
+  - **multi-select option** (marked in the questionnaire spec): the option was not
+    selected; the respondent stays in the denominator;
+  - **any other question**: the question was not shown to this respondent because a
+    display condition was not met; the respondent is left out of that question's
+    denominator.
+
+  The program does not model display conditions anywhere.
 - Supported formats: CSV as produced by the LimeSurvey RemoteControl `export_responses`
   call (headings `code`, responses `short`), and XLSX with the same structure (used by
   the existing synthetic datasets).
@@ -174,7 +180,7 @@ ingest ─▶ validate ─▶ (quality) ─▶ features ─▶ metrics ─▶ st
 | Stage | Input | Output | Notes |
 |---|---|---|---|
 | ingest | bundle | `Dataset` (DataFrame + manifest) | Reading and type normalisation only |
-| validate | `Dataset` | `Dataset` + findings | Technical checks against the questionnaire spec |
+| validate | `Dataset` | `Dataset` + findings | Structural checks against the questionnaire spec (columns, answer codes, file format); empty cells are never a finding |
 | quality | `Dataset` | `Dataset` + exclusion record | Plausibility checks on responses; planned for the end of the roadmap (section 4.1) |
 | features | `Dataset` | per-person derived table | Sum scores, severity buckets, "burdened" flag, … |
 | metrics | features + dataset | `MetricSet` | Aggregates only, **numbers only**, no formatting, no I/O |
@@ -191,11 +197,15 @@ Each stage only depends on the stages to its left. In particular:
 
 ### 4.1 Response quality checks (planned)
 
-`validate` checks whether the data are technically correct (columns present, codes
-allowed). `quality` will check whether individual responses are plausible, e.g.
-identical answers across whole scales (straight-lining), contradictory answers, or
-implausible combinations of demographic answers. Flagged responses are excluded from
-all metrics.
+`validate` checks whether the data are structurally correct (columns present, codes
+allowed, file readable). `quality` will check whether individual responses are
+plausible, e.g. identical answers across whole scales (straight-lining), contradictory
+answers, or implausible combinations of demographic answers. Flagged responses are
+excluded from all metrics.
+
+All logic about missing answers, display conditions and response cleaning belongs to
+this stage (roadmap R48–R50). Until it exists, the input is assumed to be clean and
+empty cells are interpreted as described in section 3 (D12).
 
 Requirements for when this stage is built:
 
@@ -267,8 +277,11 @@ SPOTReportGenerator/
 ### 6.1 Metric types
 
 All metrics are immutable dataclasses holding raw numbers. Derived values (shares,
-percentages) are computed properties, never stored separately. Every type records how
-many answers were missing, so reports can show "n of N answered".
+percentages) are computed properties, never stored separately. Every type records its
+actual `n` (respondents counted for this metric) and `n_missing` (respondents left
+out: question not shown, or a scale score that could not be computed), so reports can
+show "n of N answered". The valid answers that section 9 counts are this `n`; the
+privacy rules themselves are unchanged.
 
 ```python
 @dataclass(frozen=True)
@@ -535,7 +548,7 @@ export (network) should be retried, not the report generation.
 | D9 | Privacy rules exactly as in the reviewed report | Reviewed by the responsible authority; changes only with SPOT approval |
 | D10 | Input bundles are archived by this program | Snapshots can be recomputed when metric definitions change; one owner for the archive |
 | D11 | Survey registry maps LimeSurvey surveys to school and wave | LimeSurvey has no notion of schools; follow-up reports need a stable school id |
-| D12 | No missing-item rule: scores are computed from complete items only; an empty cell in an always-shown question is a validation error | The automation script exports only completed responses, in which every shown question is answered; an empty item signals an export problem, not a respondent who skipped it |
+| D12 | Empty cells are never an error or warning. Multi-select option empty = not selected (respondent stays in the denominator); any other question empty = not shown (respondent left out of that question's denominator). A scale score is computed only if all its items are present, otherwise it is missing for that respondent, silently. Display conditions are not modelled. This clean-data assumption holds until the quality stage exists (R48–R50) | Real exports contain only completed responses and the synthetic data reflect this; follow-up questions can legitimately be empty, even for every respondent. Keeping all handling of missing or inconsistent answers in one later stage avoids ad-hoc rules spread across validation and features |
 | D13 | Archived bundles are never overwritten; a new bundle for the same school and wave gets the next sequence number; the snapshot points to the latest | Every input that ever produced a report stays available and traceable |
 | D14 | Free-text answers go to a separate file written by the automation script for manual review by SPOT; this program keeps ignoring them; required before the new generator replaces the old one | The previous report contained free-text answers; they may identify students and need a human review before anything reaches a school |
 | D15 | The real content pack is a private repository, first filled from the previous Word template and program, reviewed by Johannes before use | Reuses the reviewed wording of the previous report; texts and reference values stay out of the public repository |
@@ -549,4 +562,5 @@ Larger future decisions get their own ADR in `docs/decisions/`.
   for differences of proportions, Welch test for means).
 - Free-text answers: how answers reviewed by SPOT are passed on to schools (format,
   delivery). Extraction for the review is decided (D14).
-- Response quality rules (section 4.1).
+- Response quality rules, including rules for missing or inconsistent answers
+  (section 4.1).
