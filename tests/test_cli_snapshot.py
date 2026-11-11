@@ -11,6 +11,7 @@ import pytest
 
 from spot_report import __version__
 from spot_report.cli import EXIT_INVALID_INPUT, main
+from spot_report.config import store_path as configured_store
 from spot_report.features import compute_features
 from spot_report.ingest import read_responses
 from spot_report.metrics import (
@@ -159,13 +160,12 @@ def test_export_unknown_school_exits_3(
     assert "nobody" in captured.err
 
 
-def test_export_requires_school_wave_and_store(
+def test_export_requires_school_and_wave(
     store_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     for args in (
         ["--store", str(store_path), "--school", "demo"],
         ["--store", str(store_path), "--wave", "2026"],
-        ["--school", "demo", "--wave", "2026"],
     ):
         with pytest.raises(SystemExit) as exc:
             main(["snapshot", "export", *args])
@@ -335,13 +335,42 @@ def test_read_commands_leave_the_store_file_unchanged(
 # --- usage ---------------------------------------------------------------------------
 
 
-def test_store_option_is_required(
-    command: list[str], capsys: pytest.CaptureFixture[str]
+@pytest.mark.parametrize("env", [{}, {"SPOT_STORE": "  "}])
+def test_without_store_option_or_variable_exits_3(
+    command: list[str], env: dict[str, str], capsys: pytest.CaptureFixture[str]
 ) -> None:
-    with pytest.raises(SystemExit) as exc:
-        main(command)
-    assert exc.value.code == 2
-    assert "--store" in capsys.readouterr().err
+    """No silent default location (ADR 0004)."""
+    assert main(command, env=env) == EXIT_INVALID_INPUT
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "--store" in captured.err
+    assert "SPOT_STORE" in captured.err
+
+
+def test_store_setting_reads_the_variable() -> None:
+    assert configured_store({"SPOT_STORE": "/some/store.sqlite"}) == Path(
+        "/some/store.sqlite"
+    )
+    assert configured_store({}) is None
+    assert configured_store({"SPOT_STORE": "  "}) is None
+
+
+def test_store_comes_from_the_environment(
+    two_schools: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    env = {"SPOT_STORE": str(two_schools)}
+    assert main(["snapshot", "list"], env=env) == 0
+    assert len(wave_lines(capsys.readouterr().out)) == 4
+
+
+def test_store_option_overrides_the_environment(
+    two_schools: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    env = {"SPOT_STORE": str(tmp_path / "elsewhere.sqlite")}
+    args = ["snapshot", "list", "--store", str(two_schools)]
+    assert main(args, env=env) == 0
+    assert len(wave_lines(capsys.readouterr().out)) == 4
+    assert not (tmp_path / "elsewhere.sqlite").exists()
 
 
 def test_snapshot_without_action_prints_usage(

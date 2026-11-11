@@ -807,13 +807,15 @@ spot-report build <bundle> [--report-type auto|initial|followup]
 spot-report build --responses FILE --school ID --wave LABEL --fieldwork-end DATE
                   --questionnaire-version V [...]
 spot-report validate <bundle>
-spot-report snapshot list   --store PATH [--school ID]
-spot-report snapshot export --store PATH --school ID --wave LABEL
+spot-report snapshot list   [--store PATH] [--school ID]
+spot-report snapshot export [--store PATH] --school ID --wave LABEL
 ```
 
-The snapshot commands take the store path explicitly (`--store` is required; there is
-no default location) and open it with `create=False`, so a missing
-file is an error and is never created. `snapshot list` prints one line per wave
+The snapshot store is the file named by `--store`, or else by the environment variable
+`SPOT_STORE`; there is no default location, and if neither is given the command stops
+with a message and exit code 3 (ADR 0004). The automation script sets the variable
+itself rather than relying on the cron environment. The snapshot commands open the
+store with `create=False`, so a missing file is an error and is never created. `snapshot list` prints one line per wave
 (`key=value` fields: school, wave, fieldwork dates, questionnaire version, metrics
 version, save time, school name), schools ordered by id and waves by fieldwork end;
 without `--school` it lists all schools, and an empty store prints `No snapshots`.
