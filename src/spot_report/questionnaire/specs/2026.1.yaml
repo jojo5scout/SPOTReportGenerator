@@ -5,15 +5,18 @@
 #
 # Notes on reading this file
 # - Answer codes are always quoted strings (an unquoted Y would become a boolean).
-# - A column is required unless it says `required: false`. Optional columns are read
-#   by the previous program but absent from the synthetic fixtures, so their presence
-#   in a real export is unconfirmed.
-# - Ranges marked "inferred" are observed in the synthetic fixtures only and need
-#   confirmation.
+# - A column is required unless it says `required: false`. Codes, ranges and columns
+#   were checked against the structure of the 2026 LimeSurvey survey (ADR 0004).
+#   Optional columns exist in that survey but are absent from the synthetic fixtures.
+# - Columns of the survey that are not listed here (e.g. ANGE1) are not analysed; the
+#   reader keeps them and validation ignores them.
 
 version: "2026.1"
 
-# LimeSurvey system columns. Never analysed; `id` identifies a response.
+# LimeSurvey system columns. Never analysed; `id` identifies a response. The survey
+# is not date-stamped, so `startdate` and `datestamp` are present but empty and
+# `submitdate` holds no real time: fieldwork dates come from the survey properties
+# (manifest), never from the responses (ADR 0004).
 response_id: id
 metadata:
   - id
@@ -32,8 +35,7 @@ single_choice:
   DQSTUFE:
     codes: ["Gym1", "Gym2", "Gym3", "Gym4"]
   DIAGQ0:
-    # "Ja" is stated by the previous program (it accepts several spellings of yes);
-    # "Nein" is inferred from the fixtures.
+    # DIAGQ1 to DIAGQ3 are shown only after "Ja".
     codes: ["Ja", "Nein"]
     yes_code: "Ja"
   FEHLTAGQ0:
@@ -46,7 +48,7 @@ single_choice:
 # Numeric single questions outside any scale.
 numeric:
   DQAGE:
-    # Inferred from the fixtures (the previous program states no range).
+    # A list of the ages 12 to 20 in the survey.
     min: 12
     max: 20
   SIPHQ:
@@ -61,20 +63,20 @@ multi_select:
   DIAGQ1:
     selected: "Y"
     options: [DEPR, ANGS, ESST, ADHS, PTBS, BIPO, PSYC]
-    # Read by the previous program, absent from the fixtures.
+    # OTHER is not an option of the survey: "other" is the filled free-text column
+    # (ADR 0004); it is replaced together with the metrics that use it.
     optional_options: [BORD, OTHER]
   DIAGQ2:
     selected: "Y"
     options: [NIEM, HAUS, KIND, SCHU, PSYO, PSYA, SELB, BERA]
-    # As in the previous program, NIEM ("nobody") overrides the other help sources.
+    # NIEM ("nobody") overrides the other help sources (ADR 0004).
     none_option: NIEM
     optional_options: [KLIN]
   DIAGQ3:
     selected: "Y"
     options: [NOT, MEDI, THER]
-    # As in the previous program, every other option counts as a treatment.
+    # Every option except NOT counts as a treatment.
     none_option: NOT
-    # Read by the previous program, absent from the fixtures.
     optional_options: [STAT, OTHER]
 
 # Free-text columns: ignored by this program (D14), listed so that later stages know
@@ -87,7 +89,7 @@ free_text:
   - code: "DIAGQ3[other]"
     group: DIAGQ3
   - code: ANGE2
-    required: false
+    required: false  # in the survey, absent from the fixtures
 
 # Scales. `range` is the allowed integer range of every item. `scoring: sum` means the
 # score is the sum of the items (computed in R12); `scoring: items` means the items are
@@ -121,7 +123,6 @@ scales:
       - "GAD7[GADQ7]"
   SBI:
     scoring: sum
-    # The previous program caps the total at 45 for nine items, i.e. 0 to 5 per item.
     range: [0, 5]
     columns:
       - "SBI[SBIQ0]"
@@ -133,7 +134,8 @@ scales:
       - "SBI[SBIQ6]"
       - "SBI[SBIQ7]"
       - "SBI[SBIQ8]"
-    # Subscale grouping exactly as in the previous program; the total uses all items.
+    # Two subscales on purpose, as in the previous program: the published third
+    # subscale is merged into CYNICISM (ADR 0004). The total uses all items.
     subscales:
       EXHAUSTION:
         - "SBI[SBIQ0]"
@@ -148,7 +150,6 @@ scales:
         - "SBI[SBIQ7]"
   RES:
     scoring: sum
-    # The previous program plots the total on 0 to 40 for ten items, i.e. 0 to 4 per item.
     range: [0, 4]
     columns:
       - "RESI[RESIQ1]"
@@ -163,9 +164,8 @@ scales:
       - "RESI[RESIQ10]"
   STIG:
     scoring: items
-    # The previous program draws all five items on an axis from 0 to 9. Inferred from
-    # the fixtures: StigmaQ3 only takes 1 to 7, the others 1 to 9.
-    range: [0, 9]
+    # Answer codes 1 to 10 in the survey (the fixtures use 1 to 9 only).
+    range: [1, 10]
     columns:
       - StigmaQ1
       - StigmaQ2

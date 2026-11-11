@@ -183,6 +183,10 @@ where it belongs, so ids are not always in reading order.
 ### R28 PDF pipeline and demo content pack
 - `render/pdf.py`, `examples/content-demo/` with one placeholder section,
   `spot-report build` end to end, exit codes and `result.json` as in architecture §11.
+- Archive and store as decided in ADR 0004: `build` aborts with a clear message when
+  `SPOT_ARCHIVE_DIR` is not set, unless `--no-archive` is given (local tests); the
+  store comes from `SPOT_STORE`, overridden by `--store`, and `build` aborts when
+  neither is given (no default path).
 - **Done when:** CI renders the demo report from a fixture without warnings.
 
 ---
@@ -242,6 +246,8 @@ SPOT separately (R52).
 - Export as CSV instead of XLS; write an input bundle with `manifest.json` (school and
   wave from the registry, fieldwork dates from `startdate`/`expires`, counts from
   `get_summary`).
+- The fieldwork dates must come from these API calls: the survey is not date-stamped,
+  so the responses carry no usable start or submit times (ADR 0004).
 - Expired survey without registry entry: one error e-mail, then skipped silently
   (state flag), no daily repetition.
 - **Done when:** for a registered test survey (`TEST_SID`), the script writes a bundle
@@ -260,6 +266,8 @@ SPOT separately (R52).
 - Depends on R52: the switch to the new generator happens only once free-text answers
   reach SPOT separately.
 - Call `spot-report build <bundle> --out <dir>`; read `result.json`.
+- Set `SPOT_ARCHIVE_DIR` and `SPOT_STORE` explicitly for the call instead of relying on
+  the cron environment (ADR 0004).
 - Retry only the LimeSurvey export, not the generator; exit codes 3 and 4 are final and
   produce an error e-mail with the message from `result.json`.
 - Attach the PDF with MIME type `application/pdf`.

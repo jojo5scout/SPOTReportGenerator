@@ -28,8 +28,9 @@ structure, templates and texts.
   responses and calls this program with an input bundle (section 3).
 - **Delivering reports.** The program writes files. The automation script e-mails the
   finished report to SPOT; SPOT forwards it to the school.
-- **Free-text answers.** The program ignores them. The automation script writes them to
-  a separate file that SPOT reviews manually (D14). How reviewed answers are passed on
+- **Free-text answers.** The program ignores their content; it only uses whether the
+  "other" text of `DIAGQ1` to `DIAGQ3` is filled (D14). The automation script writes
+  the free-text answers to a separate file that SPOT reviews manually. How reviewed answers are passed on
   to schools is not decided yet (section 14).
 - **The web dashboard.** It is a separate project that will read the same SQLite
   store (section 6).
@@ -65,7 +66,7 @@ contains server-specific configuration). Its current behaviour:
 - Exports complete responses with question codes and answer codes
   (`export_responses`, headings `code`, responses `short`).
 - Writes the free-text answers of the survey to a separate file for manual review by
-  SPOT (planned, roadmap R52, D14). They never reach this program.
+  SPOT (planned, roadmap R52, D14). This program never uses their content.
 - Calls the report generator, then e-mails the report to SPOT, and sends an error
   e-mail on failure.
 - `TEST_SID=<id>` processes a single survey for testing.
@@ -90,6 +91,11 @@ whenever a new survey is set up:
 
 An expired survey without a registry entry is not processed; the script sends one error
 e-mail asking for the entry. Test surveys are simply not registered.
+
+The wave label is for display and identification only (unique per school). The order
+of waves, e.g. "the wave before this one" for a follow-up report, always comes from
+`fieldwork_end`, never from the label. A school that takes part twice in one school
+year gets a suffixed label such as `2026-27-2` (ADR 0004).
 
 ## 3. Input bundle
 
@@ -125,6 +131,11 @@ Where the values come from:
 | `wave.fieldwork_start`, `wave.fieldwork_end` | LimeSurvey survey properties `startdate` and `expires` (date part) |
 | `survey.limesurvey_id` | LimeSurvey survey id |
 | `responses.counts` (optional) | LimeSurvey `get_summary`: completed and incomplete responses, for the methods section |
+
+The survey is not date-stamped, so the responses carry no usable timestamps
+(`startdate` and `datestamp` are empty, `submitdate` holds no real time). The fieldwork
+dates therefore come only from the survey properties via the LimeSurvey API, never from
+the responses (ADR 0004).
 
 `fieldwork_end` is required: it defines the order of waves (section 7). Optional
 `responses.counts`:
@@ -206,8 +217,10 @@ number. The next number is the highest all-digit directory name plus one (gaps a
 entries are ignored), padded to three digits and simply longer after `999`.
 `school.id` and `wave.label` become directory names, so they must match
 `[A-Za-z0-9][A-Za-z0-9._-]*` (at most 100 characters); anything else is rejected before
-anything is written. This is an input rule, not a privacy rule. Whether `build` requires
-`SPOT_ARCHIVE_DIR` or skips archiving when it is unset is decided with the CLI (R28).
+anything is written. This is an input rule, not a privacy rule. `build` aborts with a
+clear message when `SPOT_ARCHIVE_DIR` is not set: cron does not load the user's
+environment, and skipping the archive would lose every bundle silently. Local test runs
+pass `--no-archive` explicitly (ADR 0004, implemented with the CLI in R28).
 
 ## 4. Pipeline
 
@@ -854,7 +867,7 @@ export (network) should be retried, not the report generation.
 | D11 | Survey registry maps LimeSurvey surveys to school and wave | LimeSurvey has no notion of schools; follow-up reports need a stable school id |
 | D12 | Empty cells are never an error or warning. Multi-select option empty = not selected (respondent stays in the denominator); any other question empty = not shown (respondent left out of that question's denominator). A scale score is computed only if all its items are present, otherwise it is missing for that respondent, silently. Display conditions are not modelled. This clean-data assumption holds until the quality stage exists (R48–R50) | Real exports contain only completed responses and the synthetic data reflect this; follow-up questions can legitimately be empty, even for every respondent. Keeping all handling of missing or inconsistent answers in one later stage avoids ad-hoc rules spread across validation and features |
 | D13 | Archived bundles are never overwritten; a new bundle for the same school and wave gets the next sequence number; the snapshot points to the latest | Every input that ever produced a report stays available and traceable |
-| D14 | Free-text answers go to a separate file written by the automation script for manual review by SPOT; this program keeps ignoring them; required before the new generator replaces the old one | The previous report contained free-text answers; they may identify students and need a human review before anything reaches a school |
+| D14 | Free-text answers go to a separate file written by the automation script for manual review by SPOT; this program keeps ignoring their content; required before the new generator replaces the old one. Amended 2026-11-11 (ADR 0004): for `DIAGQ1[other]` to `DIAGQ3[other]` the program uses whether the column is filled, which means the "other" option was chosen, never the text | The previous report contained free-text answers; they may identify students and need a human review before anything reaches a school |
 | D15 | The real content pack is a private repository, first filled from the previous Word template and program, reviewed by Johannes before use | Reuses the reviewed wording of the previous report; texts and reference values stay out of the public repository |
 
 Larger future decisions get their own ADR in `docs/decisions/`.
