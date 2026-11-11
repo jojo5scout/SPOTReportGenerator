@@ -10,6 +10,7 @@ import pytest
 from spot_report.features import compute_features
 from spot_report.ingest import read_responses
 from spot_report.metrics import (
+    Count,
     Distribution,
     MetricError,
     MetricSet,
@@ -18,7 +19,7 @@ from spot_report.metrics import (
     demography,
 )
 from spot_report.metrics import compute as compute_module
-from spot_report.metrics.demography import AGE_ID, GENDER_ID, LEVEL_ID
+from spot_report.metrics.demography import AGE_ID, GENDER_ID, LEVEL_ID, RESPONDENTS_ID
 from spot_report.questionnaire import load_spec
 from tests.parity import assert_parity, expected_datasets, load_expected
 
@@ -49,7 +50,21 @@ def distribution(metrics: MetricSet, metric_id: str) -> Distribution:
     return metric
 
 
+def respondents(metrics: MetricSet) -> Count:
+    metric = metrics[RESPONDENTS_ID]
+    assert isinstance(metric, Count)
+    return metric
+
+
 # --- hand-made cases ---------------------------------------------------------------
+
+
+def test_respondents_are_the_response_rows() -> None:
+    """Every row counts, also one with every demographic question empty (ADR 0004)."""
+    metrics = compute(frame(["M", None, "W"], [None, None, "Gym1"], [None, None, 14]))
+    assert respondents(metrics) == Count(3, 0)
+    gender = distribution(metrics, GENDER_ID)
+    assert gender.n + gender.n_missing == respondents(metrics).n
 
 
 def test_counts_in_spec_order_by_hand() -> None:
@@ -109,6 +124,7 @@ def test_every_question_unanswered() -> None:
 
 def test_no_respondents() -> None:
     metrics = compute(frame([], [], []))
+    assert respondents(metrics) == Count(0, 0)
     assert distribution(metrics, GENDER_ID).counts == (0, 0, 0)
     assert distribution(metrics, GENDER_ID).n_missing == 0
 
@@ -166,9 +182,8 @@ def test_legacy_parity(dataset: str) -> None:
     expected = load_expected(dataset)
     checked = set()
 
-    gender = distribution(metrics, GENDER_ID)
-    # `demography.all` is the number of respondents: answered plus left out.
-    assert_parity(dataset, "demography.all", gender.n + gender.n_missing)
+    # `demography.all` is the number of respondents.
+    assert_parity(dataset, "demography.all", respondents(metrics).n)
     checked.add("demography.all")
 
     for prefix, metric_id in (("gender", GENDER_ID), ("level", LEVEL_ID)):

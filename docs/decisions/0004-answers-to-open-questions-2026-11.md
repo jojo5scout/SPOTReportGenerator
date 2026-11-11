@@ -55,7 +55,7 @@ text is never interpreted, logged, stored or shown.
 | 16 | `n_missing` of the diagnosed groups = empty `DIAGQ0` | yes | none |
 | 18 | `burdened` and symptom category with one score missing | confirmed as implemented | none |
 | 19 | Tie-break of help-source combinations by spec option order | fine | none |
-| 23 | Number of respondents | a metric of its own, from the number of response rows | new `demography.all` |
+| 23 | Number of respondents | a metric of its own, from the number of response rows | new `demography.respondents.count` of a new kind `Count` (an id needs three segments, so the legacy name `demography.all` cannot be used) |
 
 The renamed and changed metrics need no migration and no `METRICS_VERSION` bump: no
 snapshot has been written outside tests yet (`spot-report build` does not exist).

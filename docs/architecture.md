@@ -349,6 +349,11 @@ class Proportion:          # "k of n"
     n_missing: int
 
 @dataclass(frozen=True)
+class Count:               # a number of respondents that is not a share, e.g. all
+    n: int
+    n_missing: int         # 0 unless the metric defines it
+
+@dataclass(frozen=True)
 class Summary:             # numeric scale or score
     n: int
     n_missing: int
@@ -383,7 +388,7 @@ options first, then by option order, so equal metrics give identical JSON.
 Computation conventions are fixed here because legacy parity and comparisons between
 waves depend on them: standard deviation with `ddof=1`, quantiles with the NumPy/pandas
 default method. The set of types may grow (`PatternCounts` was added for multi-select
-patterns), but every type must be JSON-serialisable and must contain enough information for statistical
+patterns, `Count` for the number of respondents), but every type must be JSON-serialisable and must contain enough information for statistical
 comparison (counts and denominators, or mean, SD and n).
 
 Details fixed in `metrics/types.py`:
@@ -470,8 +475,10 @@ compares the numbers with the legacy baseline (section 12).
 
 Demography (`demography.gender.distribution`, `demography.level.distribution`,
 `demography.age.distribution`) sets the pattern: one `Distribution` per question, in
-spec order, with `n + n_missing` equal to the number of respondents. There is no
-separate respondent count metric; the total is that sum.
+spec order, with `n + n_missing` equal to the number of respondents. The number of
+respondents itself is `demography.respondents.count`, a `Count` of the response rows
+(ADR 0004): the most important number of the report, used in the methods section and
+by the privacy rules.
 
 Diagnoses (`diagnoses.*`) shows the group conventions for questions that apply to a
 subgroup and for multi-select questions: one `Proportion` per option; the population is
@@ -604,7 +611,7 @@ CREATE TABLE wave (
 CREATE TABLE metric (
     wave_id   INTEGER NOT NULL REFERENCES wave(id) ON DELETE CASCADE,
     metric_id TEXT NOT NULL,
-    kind      TEXT NOT NULL,     -- proportion | summary | distribution | pattern_counts
+    kind      TEXT NOT NULL,     -- proportion | count | summary | distribution | pattern_counts
     payload   TEXT NOT NULL,     -- JSON
     PRIMARY KEY (wave_id, metric_id)
 );

@@ -33,7 +33,7 @@ CREATE TABLE wave (
 CREATE TABLE metric (
     wave_id   INTEGER NOT NULL REFERENCES wave(id) ON DELETE CASCADE,
     metric_id TEXT NOT NULL,
-    kind      TEXT NOT NULL,     -- proportion | summary | distribution | pattern_counts
+    kind      TEXT NOT NULL,     -- proportion | count | summary | distribution | pattern_counts
     payload   TEXT NOT NULL,     -- JSON
     PRIMARY KEY (wave_id, metric_id)
 );

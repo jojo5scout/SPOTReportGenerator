@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 
 from spot_report.metrics import (
+    Count,
     Distribution,
     Metric,
     MetricError,
@@ -45,6 +46,8 @@ EXAMPLES = [
     Proportion(3, 10, 1),
     Proportion(0, 0, 0),
     Proportion(5, 5, 2),
+    Count(300),
+    Count(0, 0),
     EMPTY_SUMMARY,
     ONE_SUMMARY,
     PRECISE_SUMMARY,
@@ -72,6 +75,14 @@ def test_round_trip_dict_and_json(metric: Metric) -> None:
     assert type(metric).from_json(text) == metric
     # The text itself is stable (re-serialising gives identical text).
     assert metric_from_json(text).to_json() == text
+
+
+def test_count_rejects_negative_and_non_integer_values() -> None:
+    for bad in (-1, 2.0, True, None):
+        with pytest.raises(MetricError):
+            Count(bad)  # type: ignore[arg-type]
+    with pytest.raises(MetricFormatError):
+        metric_from_dict({"kind": "count", "n": 3})  # n_missing is required
 
 
 @pytest.mark.parametrize("metric", EXAMPLES, ids=_id)
@@ -106,6 +117,7 @@ def test_none_is_written_as_null() -> None:
 def test_kind_tags_match_store_column() -> None:
     assert set(METRIC_KINDS) == {
         "proportion",
+        "count",
         "summary",
         "distribution",
         "pattern_counts",

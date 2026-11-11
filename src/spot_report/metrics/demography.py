@@ -1,14 +1,20 @@
-"""Demography metrics: gender, school level and age of the respondents.
+"""Demography metrics: number of respondents, gender, school level and age.
 
-Every metric is a :class:`~spot_report.metrics.types.Distribution` over the answer
-codes of the questionnaire spec, in spec order (age: every integer of the spec range,
-as text). Following decision D12, a respondent who left the question empty is not
-counted in the distribution (``n``) but in ``n_missing``; ``n + n_missing`` is always
-the number of respondents. There is no separate "number of respondents" metric: it is
-that sum, the same for all three metrics.
+The number of respondents is the number of response rows (a
+:class:`~spot_report.metrics.types.Count`). It is the most important number of the
+report, used in the methods section and by the privacy rules, so it has a metric of
+its own (ADR 0004) instead of being read from a question.
+
+Every other metric is a :class:`~spot_report.metrics.types.Distribution` over the
+answer codes of the questionnaire spec, in spec order (age: every integer of the spec
+range, as text). Following decision D12, a respondent who left the question empty is
+not counted in the distribution (``n``) but in ``n_missing``; ``n + n_missing`` is
+always the number of respondents.
 
 Metric ids (a stored contract)
 ------------------------------
+``demography.respondents.count``
+    ``Count``: the number of response rows.
 ``demography.gender.distribution``
     ``DQSEX`` over the spec's answer codes.
 ``demography.level.distribution``
@@ -26,7 +32,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from spot_report.metrics.registry import MetricDefinition
-from spot_report.metrics.types import Distribution, MetricError, MetricSet
+from spot_report.metrics.types import Count, Distribution, MetricError, MetricSet
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -42,20 +48,20 @@ GENDER_COLUMN = "DQSEX"
 LEVEL_COLUMN = "DQSTUFE"
 AGE_COLUMN = "DQAGE"
 
+RESPONDENTS_ID = "demography.respondents.count"
 GENDER_ID = "demography.gender.distribution"
 LEVEL_ID = "demography.level.distribution"
 AGE_ID = "demography.age.distribution"
 
-_DEFINITIONS: tuple[MetricDefinition, ...] = (
-    MetricDefinition(GENDER_ID, "distribution", DOMAIN, (GENDER_COLUMN,), SINCE),
-    MetricDefinition(LEVEL_ID, "distribution", DOMAIN, (LEVEL_COLUMN,), SINCE),
-    MetricDefinition(AGE_ID, "distribution", DOMAIN, (AGE_COLUMN,), SINCE),
-)
-
 
 def definitions(spec: QuestionnaireSpec) -> tuple[MetricDefinition, ...]:
-    """The metric definitions of this domain (the same for every spec version)."""
-    return _DEFINITIONS
+    """The metric definitions of this domain."""
+    return (
+        MetricDefinition(RESPONDENTS_ID, "count", DOMAIN, (spec.response_id,), SINCE),
+        MetricDefinition(GENDER_ID, "distribution", DOMAIN, (GENDER_COLUMN,), SINCE),
+        MetricDefinition(LEVEL_ID, "distribution", DOMAIN, (LEVEL_COLUMN,), SINCE),
+        MetricDefinition(AGE_ID, "distribution", DOMAIN, (AGE_COLUMN,), SINCE),
+    )
 
 
 def compute(
@@ -66,6 +72,7 @@ def compute(
     """The demography metrics of one wave; see the module docstring for the ids."""
     return MetricSet(
         {
+            RESPONDENTS_ID: Count(len(responses)),
             GENDER_ID: _distribution(
                 responses, GENDER_COLUMN, spec.question(GENDER_COLUMN).codes
             ),
