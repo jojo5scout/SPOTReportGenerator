@@ -23,10 +23,11 @@ Populations (decision D12)
   respondents who did not tick the option are not part of the group and are not counted
   as missing (the convention of the diagnosis metrics).
 
-Definitions of the previous program that the architecture does not specify and that are
-kept here:
+Definitions of the previous program that the architecture does not specify, kept and
+confirmed in ADR 0004:
 
-* the subgroups are defined by the ticked option alone, ``DIAGQ0`` is not consulted;
+* the subgroups are defined by the ticked option alone, ``DIAGQ0`` is not consulted
+  (the diagnosis types are shown only after a "yes" to ``DIAGQ0``);
 * the "elevated" answers of item 9 and of the impairment question are the values at or
   above :data:`ELEVATED_FROM` (2).
 
@@ -101,8 +102,8 @@ DIAGNOSIS_TYPE_GROUP = "DIAGQ1"
 DEPRESSION_OPTION = "DEPR"
 ANXIETY_OPTION = "ANGS"
 
-#: Item 9 and impairment answers at or above this value count as elevated. Reproduces
-#: the previous report; the architecture does not define it.
+#: Item 9 and impairment answers at or above this value count as elevated, as in the
+#: previous report (confirmed in ADR 0004).
 ELEVATED_FROM = 2
 
 PHQ9_SEVERITY_ID = "symptoms.phq9.severity"

@@ -11,8 +11,7 @@ text (D14).
 
 Populations
 -----------
-The architecture does not define them, so the definitions of the previous program are
-kept:
+The definitions of the previous program, confirmed in ADR 0004:
 
 * *diagnosis reported*: respondents with an answer to ``DIAGQ0``; an empty answer is
   not shown and counted in ``n_missing`` (D12).
