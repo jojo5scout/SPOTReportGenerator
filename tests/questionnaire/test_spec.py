@@ -81,6 +81,8 @@ def test_scale_columns(spec: QuestionnaireSpec) -> None:
     assert len(spec.scale("RES").columns) == 10
     assert len(spec.scale("STIG").columns) == 5
     assert spec.scale("STIG").scoring is Scoring.ITEMS
+    # Answer codes 1 to 10 in the survey; the fixtures only use 1 to 9.
+    assert (spec.scale("STIG").min_value, spec.scale("STIG").max_value) == (1, 10)
     assert spec.scale("PHQ9").scoring is Scoring.SUM
 
 
