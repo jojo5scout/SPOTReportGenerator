@@ -532,15 +532,15 @@ applied by the presentation.
 
 Resilience (`resilience.res.*`) holds the `Summary` of the `RES` sum (`resilience.res.total`),
 the same for the burdened (`.total.burdened`, `burdened == True`) and for the non-burdened
-(`.total.nonburdened`), and the `Distribution` of the sum over every possible score
+(`.total.nonburdened`, `burdened == False`: both symptom scores present and below their
+cut-offs, ADR 0004), and the `Distribution` of the sum over every possible score
 (`resilience.res.histogram`, categories `"0"` to the maximum sum derived from the spec's
 item count and range). A respondent without a sum (an empty item, D12) is `n_missing`;
-respondents outside a subgroup are not counted as missing. The architecture does not
-define the non-burdened group; the previous report's definition is kept: `burdened` is not
-`True` and at least one of the PHQ-9 and GAD-7 sums is present. With complete symptom
-data this equals `burdened == False`; where one score is missing and the other is below
-its cut-off, the respondent is non-burdened here although `burdened` is `NA`. The
-reference value and the lines of the previous histogram are presentation.
+respondents outside a subgroup, including those whose `burdened` is `NA`, are not counted
+as missing. The previous report also counted a respondent with one score below its
+cut-off and the other missing as non-burdened; with complete symptom data both
+definitions agree. The reference value and the lines of the previous histogram are
+presentation.
 
 ### 6.3 MetricSet and snapshot
 

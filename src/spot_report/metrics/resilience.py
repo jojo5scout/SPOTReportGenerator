@@ -2,8 +2,7 @@
 
 Questions used: the items of the scale ``RES`` in the questionnaire spec. The per-person
 sum ``res_sum`` and the flag ``burdened`` come from the feature table (architecture
-section 6.5); the symptom scores ``phq9_sum`` and ``gad7_sum`` are read for the
-non-burdened group. No column code is hard-coded here.
+section 6.5). No column code is hard-coded here.
 
 Populations (decision D12)
 --------------------------
@@ -17,14 +16,12 @@ The sum is computed only if every item was answered; the others have no sum.
 * *burdened*: respondents with ``burdened == True`` (PHQ-9 or GAD-7 at or above 10).
   Respondents with ``burdened`` ``False`` or ``NA`` are not part of the group and are
   not counted as missing. Within the group, a missing sum is counted in ``n_missing``.
-* *non-burdened*: the architecture does not define this group; the previous program's
-  definition is kept: no cut-off reached (``burdened`` is not ``True``) and at least one
-  of the two symptom scores present. This is ``burdened == False`` plus the
-  respondents for whom ``burdened`` is ``NA`` but one score is present (that score is
-  below its cut-off, the other score is missing). Whether the second kind of respondent
-  belongs in a "non-burdened" group is questionable, because the missing score could be
-  10 or more; with complete symptom data the two readings agree. Within the group, a
-  missing sum is counted in ``n_missing``.
+* *non-burdened*: respondents with ``burdened == False``, i.e. both symptom scores
+  present and below their cut-offs (ADR 0004). Respondents with ``burdened`` ``NA`` (one
+  score below its cut-off and the other missing, which could be 10 or more) are in
+  neither group and not counted as missing. The previous program also counted them as
+  non-burdened; with complete symptom data the two definitions agree. Within the group,
+  a missing sum is counted in ``n_missing``.
 * *histogram*: respondents with a sum; the others are counted in ``n_missing``.
 
 Statistics are those of :meth:`Summary.from_values`: SD with ``ddof=1`` (``None`` for a
@@ -115,8 +112,7 @@ def compute(
     """The resilience metrics of one wave; see the module docstring for the ids."""
     sums = features["res_sum"]
     burdened = features["burdened"].fillna(False).astype(bool)
-    any_symptom_score = features["phq9_sum"].notna() | features["gad7_sum"].notna()
-    nonburdened = ~burdened & any_symptom_score
+    nonburdened = (~features["burdened"]).fillna(False).astype(bool)
 
     computed = sums.notna()
     histogram = Distribution.from_values(

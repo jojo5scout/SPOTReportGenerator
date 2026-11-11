@@ -99,8 +99,8 @@ def histogram(metrics: MetricSet) -> Distribution:
 
 
 # Six respondents. Burdened (rows 0-2): PHQ-9 12, GAD-7 11, PHQ-9 10 (GAD-7 missing).
-# Not burdened (rows 3-4): both scores below 10 (row 3), only GAD-7 present (row 4).
-# Row 5: neither score. RES sums 20 30 10 25 35 40.
+# Not burdened (row 3): both scores below 10. Undeterminable (rows 4-5): only GAD-7
+# present and below 10 (row 4), neither score (row 5). RES sums 20 30 10 25 35 40.
 RES_SUMS: list[int | None] = [20, 30, 10, 25, 35, 40]
 PHQ_SUMS: list[int | None] = [12, 3, 10, 4, None, None]
 GAD_SUMS: list[int | None] = [0, 11, None, 6, 2, None]
@@ -126,22 +126,21 @@ def test_burdened_is_any_cutoff_even_with_a_missing_score() -> None:
     assert metric.sd == 10.0
 
 
-def test_nonburdened_needs_a_symptom_score_and_no_cutoff() -> None:
+def test_nonburdened_needs_both_scores_below_the_cutoffs() -> None:
     # Row 3: both scores below the cut-offs. Row 4: only GAD-7 present and below its
-    # cut-off, so burdened is undeterminable but the previous definition counts it in.
-    # Row 5 has no symptom score at all and is in no group.
+    # cut-off; the missing PHQ-9 could be 10 or more, so the row is in no group (the
+    # previous program counted it as non-burdened, ADR 0004). Row 5 has no score.
     metrics = compute(RES_SUMS, PHQ_SUMS, GAD_SUMS)
     metric = summary(metrics, NONBURDENED)
-    assert (metric.n, metric.n_missing) == (2, 0)
-    assert metric.mean == 30.0  # (25 + 35) / 2
-    assert metric.sd == pytest.approx(math.sqrt(50))
+    assert (metric.n, metric.n_missing) == (1, 0)
+    assert (metric.mean, metric.sd) == (25.0, None)
 
 
 def test_groups_do_not_overlap_and_leave_out_respondents_without_scores() -> None:
     metrics = compute(RES_SUMS, PHQ_SUMS, GAD_SUMS)
     assert (
         summary(metrics, BURDENED).n + summary(metrics, NONBURDENED).n
-        == summary(metrics, TOTAL).n - 1
+        == summary(metrics, TOTAL).n - 2
     )
 
 
