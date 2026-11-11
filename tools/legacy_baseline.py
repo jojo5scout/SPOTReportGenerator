@@ -37,8 +37,10 @@ replacing names in the imported legacy modules of this process only):
   a chart helper receives are never read.
 
 Excluded: chart paths and objects, warnings, texts, the free-text chapter (its only
-number counts non-empty free-text answers, decision D14) and every count derived from
-whether a free-text answer is empty (``EXCLUDED_KEYS``).
+number counts non-empty free-text answers, decision D14) and the keys in
+``EXCLUDED_KEYS`` (none at present). The counts of filled "other" answers of the
+diagnosis questions are kept: the new metrics use whether those columns are filled
+(D14 as amended in ADR 0004).
 """
 
 from __future__ import annotations
@@ -77,16 +79,9 @@ CHAPTERS: tuple[str, ...] = (
     "resilience",
 )
 
-#: Context keys left out: counts and percentages that depend on whether a free-text
-#: "other" answer is empty. This program ignores free-text answers (D14).
-EXCLUDED_KEYS: Mapping[str, str] = {
-    "diagnoses.count.andereDiag": "counts non-empty free-text answers",
-    "diagnoses.pct.andereDiag": "counts non-empty free-text answers",
-    "diagnoses.help.count.OTHER": "counts non-empty free-text answers",
-    "diagnoses.help.pct.OTHER": "counts non-empty free-text answers",
-    "diagnoses.treatment.count.OTHER": "counts non-empty free-text answers",
-    "diagnoses.treatment.pct.OTHER": "counts non-empty free-text answers",
-}
+#: Context keys left out, with the reason (written to the file header). Until ADR 0004
+#: the counts of filled "other" answers were listed here.
+EXCLUDED_KEYS: Mapping[str, str] = {}
 
 #: Top-level context keys whose second segment is the previous program's name for an
 #: aliased instrument. That segment is replaced by the alias by position, so the real

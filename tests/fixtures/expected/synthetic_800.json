@@ -2,14 +2,7 @@
   "header": {
     "dataset": "synthetic_800",
     "environment": "Python 3.12.16, pandas 2.3.2, numpy 2.2.6, matplotlib 3.10.5, openpyxl 3.1.5",
-    "excluded": {
-      "diagnoses.count.andereDiag": "counts non-empty free-text answers",
-      "diagnoses.help.count.OTHER": "counts non-empty free-text answers",
-      "diagnoses.help.pct.OTHER": "counts non-empty free-text answers",
-      "diagnoses.pct.andereDiag": "counts non-empty free-text answers",
-      "diagnoses.treatment.count.OTHER": "counts non-empty free-text answers",
-      "diagnoses.treatment.pct.OTHER": "counts non-empty free-text answers"
-    },
+    "excluded": {},
     "generated_by": "previous program, commit c464e3e",
     "generator": "tools/legacy_baseline.py",
     "rounding": {
@@ -469,6 +462,10 @@
       "kind": "count",
       "value": 4
     },
+    "diagnoses.count.andereDiag": {
+      "kind": "count",
+      "value": 4
+    },
     "diagnoses.help.count.BERA": {
       "kind": "count",
       "value": 7
@@ -488,6 +485,10 @@
     "diagnoses.help.count.NIEM": {
       "kind": "count",
       "value": 8
+    },
+    "diagnoses.help.count.OTHER": {
+      "kind": "count",
+      "value": 7
     },
     "diagnoses.help.count.PSYA": {
       "kind": "count",
@@ -544,6 +545,14 @@
       "numerator": 8,
       "unrounded": 6.666666666666667,
       "value": 7
+    },
+    "diagnoses.help.pct.OTHER": {
+      "decimals": 0,
+      "denominator": 120,
+      "kind": "percent",
+      "numerator": 7,
+      "unrounded": 5.833333333333333,
+      "value": 6
     },
     "diagnoses.help.pct.PSYA": {
       "decimals": 0,
@@ -725,6 +734,14 @@
       "unrounded": 0.5,
       "value": 1
     },
+    "diagnoses.pct.andereDiag": {
+      "decimals": 0,
+      "denominator": 800,
+      "kind": "percent",
+      "numerator": 4,
+      "unrounded": 0.5,
+      "value": 1
+    },
     "diagnoses.top.n": {
       "kind": "count",
       "value": 120
@@ -745,6 +762,10 @@
       "kind": "count",
       "value": 18
     },
+    "diagnoses.treatment.count.OTHER": {
+      "kind": "count",
+      "value": 18
+    },
     "diagnoses.treatment.count.STAT": {
       "kind": "count",
       "value": 0
@@ -762,6 +783,14 @@
       "value": 56
     },
     "diagnoses.treatment.pct.NOT": {
+      "decimals": 0,
+      "denominator": 120,
+      "kind": "percent",
+      "numerator": 18,
+      "unrounded": 15.0,
+      "value": 15
+    },
+    "diagnoses.treatment.pct.OTHER": {
       "decimals": 0,
       "denominator": 120,
       "kind": "percent",

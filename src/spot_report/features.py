@@ -55,7 +55,8 @@ Feature columns (a contract for the metric domains)
 ``diagnosis`` (``boolean``)
     ``DIAGQ0`` equals the spec's yes code; ``NA`` when empty.
 ``treatment_any`` (``boolean``, never ``NA``)
-    At least one ``DIAGQ3`` option other than the spec's ``none_option`` is selected.
+    At least one ``DIAGQ3`` option other than the spec's ``none_option`` is selected,
+    or the "other" text of ``DIAGQ3`` is filled (ADR 0004).
 ``res_sum`` (``Int64``)
     RES sum (0-40).
 ``sbi_<subscale>_sum`` (``Int64``)
@@ -79,6 +80,9 @@ Intentional differences from the previous program
   several spellings of yes) and is ``NA`` when empty (previously ``False``).
 * No warnings are returned for absent columns: required columns are guaranteed by
   validation, absent optional multi-select options count as not selected.
+* A filled "other" text counts as a chosen option (ADR 0004); the previous program
+  ignored it for ``treatment_any``. Only whether the text is filled is used, never
+  the text itself (D14).
 """
 
 from __future__ import annotations
@@ -108,6 +112,7 @@ __all__ = [
     "feature_columns",
     "integer_features",
     "option_selected",
+    "other_given",
     "sbi_subscale_column",
     "scale_sum",
     "severity",
@@ -328,9 +333,10 @@ def yes_no(df: pd.DataFrame, spec: QuestionnaireSpec, code: str) -> pd.Series:
 def any_selected(df: pd.DataFrame, spec: QuestionnaireSpec, group: str) -> pd.Series:
     """Whether any option of a multi-select question is selected; never ``NA``.
 
-    The question's ``none_option`` (if the spec names one) does not count. Empty
-    option cells are not selected (D12). An optional option column absent from the
-    responses counts as not selected for everyone; an absent required option is an
+    The question's ``none_option`` (if the spec names one) does not count; a filled
+    "other" text of the question counts as a selected option (:func:`other_given`).
+    Empty option cells are not selected (D12). An optional option column absent from
+    the responses counts as not selected for everyone; an absent required option is an
     input error.
     """
     selected = pd.Series(False, index=df.index, dtype=pd.BooleanDtype())
@@ -338,6 +344,9 @@ def any_selected(df: pd.DataFrame, spec: QuestionnaireSpec, group: str) -> pd.Se
         if option.none_option:
             continue
         selected = selected | option_selected(df, option)
+    other = spec.other_text(group)
+    if other is not None:
+        selected = selected | other_given(df, other)
     return selected
 
 
@@ -352,6 +361,20 @@ def option_selected(df: pd.DataFrame, option: Question) -> pd.Series:
         return pd.Series(False, index=df.index, dtype=pd.BooleanDtype())
     ticked = _string_column(df, option.code).eq(option.selected).fillna(False)
     return ticked.astype(pd.BooleanDtype())
+
+
+def other_given(df: pd.DataFrame, column: Question) -> pd.Series:
+    """Whether a free-text "other" column is filled: ``True`` or ``False``, not ``NA``.
+
+    The survey has no option column for "other": a pupil who chooses it has to type a
+    text, so a filled column means "other" was chosen (ADR 0004). Only whether the
+    cell holds more than whitespace is used, never the text (D14). An optional column
+    absent from the responses counts as not filled.
+    """
+    if column.code not in df.columns and not column.required:
+        return pd.Series(False, index=df.index, dtype=pd.BooleanDtype())
+    filled = _string_column(df, column.code).str.strip().ne("").fillna(False)
+    return filled.astype(pd.BooleanDtype())
 
 
 # --- input access ---------------------------------------------------------------------

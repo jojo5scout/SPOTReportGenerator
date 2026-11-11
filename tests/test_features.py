@@ -379,9 +379,12 @@ TREATMENT_CASES = [
     ({"DIAGQ3[MEDI]": "Y"}, True),
     ({"DIAGQ3[THER]": "Y"}, True),
     ({"DIAGQ3[THER]": "Y", "DIAGQ3[NOT]": "Y"}, True),  # as in the previous program
-    ({"DIAGQ3[STAT]": None, "DIAGQ3[OTHER]": None}, False),  # optional, present, empty
+    ({"DIAGQ3[STAT]": None}, False),  # optional, present, empty
     ({"DIAGQ3[STAT]": "Y"}, True),  # optional option present and selected
-    ({"DIAGQ3[OTHER]": "Y"}, True),
+    # A filled "other" text is a chosen option (ADR 0004); only filled-or-not counts.
+    ({"DIAGQ3[other]": "x"}, True),
+    ({"DIAGQ3[other]": "   "}, False),
+    ({"DIAGQ3[other]": "x", "DIAGQ3[NOT]": "Y"}, True),
 ]
 
 

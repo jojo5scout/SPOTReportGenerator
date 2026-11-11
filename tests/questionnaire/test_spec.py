@@ -200,6 +200,8 @@ def test_minimal_snippet_loads() -> None:
     )
     assert spec.question("MS[THREE]").required is False
     assert spec.question("MS[other]").kind is QuestionKind.FREE_TEXT
+    assert spec.other_text("MS") == spec.question("MS[other]")
+    assert spec.other_text("S") is None
     assert spec.question("Q1").yes_code is None
     assert not any(q.none_option for q in spec.multi_select_options("MS"))
 

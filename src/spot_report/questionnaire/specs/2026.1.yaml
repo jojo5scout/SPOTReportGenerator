@@ -63,9 +63,7 @@ multi_select:
   DIAGQ1:
     selected: "Y"
     options: [DEPR, ANGS, ESST, ADHS, PTBS, BIPO, PSYC]
-    # OTHER is not an option of the survey: "other" is the filled free-text column
-    # (ADR 0004); it is replaced together with the metrics that use it.
-    optional_options: [BORD, OTHER]
+    optional_options: [BORD]
   DIAGQ2:
     selected: "Y"
     options: [NIEM, HAUS, KIND, SCHU, PSYO, PSYA, SELB, BERA]
@@ -77,10 +75,12 @@ multi_select:
     options: [NOT, MEDI, THER]
     # Every option except NOT counts as a treatment.
     none_option: NOT
-    optional_options: [STAT, OTHER]
+    optional_options: [STAT]
 
-# Free-text columns: ignored by this program (D14), listed so that later stages know
-# them. `group` ties an "other" text column to its multi-select question.
+# Free-text columns: their content is never used (D14). `group` ties an "other" text
+# column to its multi-select question: the survey has no "other" option column, a
+# filled "other" text means "other" was chosen, so only whether it is filled is used
+# (D14 as amended in ADR 0004).
 free_text:
   - code: "DIAGQ1[other]"
     group: DIAGQ1

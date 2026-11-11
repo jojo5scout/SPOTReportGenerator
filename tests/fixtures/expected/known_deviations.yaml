@@ -22,4 +22,280 @@
 #     task: R16
 #     reason: Denominator is the respondents who answered FEHLTAGQ1 (D12).
 
-deviations: []
+deviations:
+  - dataset: synthetic_300
+    key: diagnoses.help_usage.n0
+    legacy: 5
+    new: 3
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_300
+    key: diagnoses.help_usage.p0
+    legacy: 11
+    new: 6.666666666666667
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_300
+    key: diagnoses.help_usage.n1
+    legacy: 40
+    new: 42
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_300
+    key: diagnoses.help_usage.p1
+    legacy: 89
+    new: 93.33333333333333
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_500
+    key: diagnoses.help_usage.n0
+    legacy: 9
+    new: 5
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_500
+    key: diagnoses.help_usage.p0
+    legacy: 12
+    new: 6.666666666666667
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_500
+    key: diagnoses.help_usage.n1
+    legacy: 66
+    new: 70
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_500
+    key: diagnoses.help_usage.p1
+    legacy: 88
+    new: 93.33333333333333
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_800
+    key: diagnoses.help_usage.n0
+    legacy: 15
+    new: 8
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_800
+    key: diagnoses.help_usage.p0
+    legacy: 13
+    new: 6.666666666666667
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_800
+    key: diagnoses.help_usage.n1
+    legacy: 105
+    new: 112
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_800
+    key: diagnoses.help_usage.p1
+    legacy: 88
+    new: 93.33333333333333
+    task: R15
+    reason: 'A filled "other" help source counts as a help source, so pupils whose only help is "other" no longer count as using none (ADR 0004).'
+  - dataset: synthetic_300
+    key: assoc.table_all.mildnone.treated
+    legacy: 7
+    new: 10
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_300
+    key: assoc.by_level.Gym1.mildnone.treated
+    legacy: 1
+    new: 2
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_300
+    key: assoc.by_level.Gym2.mildnone.treated
+    legacy: 2
+    new: 4
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_300
+    key: assoc.table_all.moderate.treated
+    legacy: 9
+    new: 11
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_300
+    key: assoc.by_level.Gym4.moderate.treated
+    legacy: 1
+    new: 3
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_300
+    key: assoc.table_all.severe.treated
+    legacy: 15
+    new: 17
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_300
+    key: assoc.by_level.Gym1.severe.treated
+    legacy: 5
+    new: 6
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_300
+    key: assoc.by_level.Gym2.severe.treated
+    legacy: 0
+    new: 1
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_300
+    key: assoc.overlap.symp_diag_treated_n
+    legacy: 15
+    new: 17
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.table_all.mildnone.treated
+    legacy: 8
+    new: 10
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.by_level.Gym2.mildnone.treated
+    legacy: 2
+    new: 4
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.table_all.moderate.treated
+    legacy: 13
+    new: 20
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.by_level.Gym1.moderate.treated
+    legacy: 8
+    new: 11
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.by_level.Gym2.moderate.treated
+    legacy: 2
+    new: 3
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.by_level.Gym3.moderate.treated
+    legacy: 3
+    new: 4
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.by_level.Gym4.moderate.treated
+    legacy: 0
+    new: 2
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.table_all.severe.treated
+    legacy: 31
+    new: 34
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.by_level.Gym1.severe.treated
+    legacy: 12
+    new: 13
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.by_level.Gym2.severe.treated
+    legacy: 6
+    new: 7
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.by_level.Gym3.severe.treated
+    legacy: 5
+    new: 6
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_500
+    key: assoc.overlap.symp_diag_treated_n
+    legacy: 31
+    new: 34
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.table_all.mildnone.treated
+    legacy: 9
+    new: 11
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.by_level.Gym2.mildnone.treated
+    legacy: 4
+    new: 5
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.by_level.Gym3.mildnone.treated
+    legacy: 3
+    new: 4
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.table_all.moderate.treated
+    legacy: 31
+    new: 39
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.by_level.Gym1.moderate.treated
+    legacy: 10
+    new: 13
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.by_level.Gym2.moderate.treated
+    legacy: 8
+    new: 9
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.by_level.Gym3.moderate.treated
+    legacy: 8
+    new: 12
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.table_all.severe.treated
+    legacy: 44
+    new: 52
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.by_level.Gym1.severe.treated
+    legacy: 18
+    new: 20
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.by_level.Gym2.severe.treated
+    legacy: 10
+    new: 11
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.by_level.Gym3.severe.treated
+    legacy: 9
+    new: 11
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.by_level.Gym4.severe.treated
+    legacy: 7
+    new: 10
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'
+  - dataset: synthetic_800
+    key: assoc.overlap.symp_diag_treated_n
+    legacy: 44
+    new: 52
+    task: R18
+    reason: 'A filled "other" treatment counts as a treatment, so pupils whose only treatment is "other" now count as treated (ADR 0004).'

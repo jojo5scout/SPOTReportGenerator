@@ -38,8 +38,9 @@ new values.
   so the check stays meaningful after the decision to deviate; an entry whose key
   matches the legacy value again fails as stale, and an entry whose legacy value no
   longer matches the expected file fails too. The list starts empty.
-- **What is not stored.** Texts, chart files, warnings, the free-text chapter, counts of
-  non-empty free-text answers (D14) and literature reference values. Context keys of the
+- **What is not stored.** Texts, chart files, warnings, the free-text chapter and
+  literature reference values. (Until ADR 0004 the counts of filled "other" answers
+  were left out too; they are stored since the new metrics use them.) Context keys of the
   previous program that name an aliased instrument are renamed to the alias by
   position, so the driver never contains the real name.
 

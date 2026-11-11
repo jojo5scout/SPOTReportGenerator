@@ -79,10 +79,9 @@ def test_aliased_instruments_use_their_alias(dataset: str) -> None:
 
 
 @pytest.mark.parametrize("dataset", DATASETS)
-def test_free_text_counts_are_not_stored(dataset: str) -> None:
+def test_excluded_keys_and_free_text_chapter_are_not_stored(dataset: str) -> None:
     expected = load_expected(dataset)
     excluded = set(expected.header["excluded"])
-    assert excluded
     assert not excluded & set(expected)
     assert not [key for key in expected if key.startswith("angebotswunsch")]
 
@@ -98,9 +97,16 @@ def test_percentages_are_consistent_with_their_counts(dataset: str) -> None:
 
 @pytest.mark.parametrize("dataset", DATASETS)
 def test_values_reproduce_themselves(dataset: str) -> None:
-    """Every legacy number passes its own parity check (shares for percentages)."""
+    """Every legacy number passes its own parity check (shares for percentages).
+
+    Keys with a known deviation are skipped: their check expects the recorded new value
+    (the domain tests and ``test_known_deviations_file_is_valid`` cover them).
+    """
     expected = load_expected(dataset)
+    deviations = load_known_deviations()
     for key, entry in expected.items():
+        if find_deviation(deviations, dataset, key) is not None:
+            continue
         if entry.kind == "percent" and entry.denominator:
             assert entry.numerator is not None
             new: Number | None = Fraction(entry.numerator, entry.denominator)

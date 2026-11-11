@@ -39,6 +39,8 @@ NONE_OPTION = next(q.code for q in SPEC.multi_select_options("DIAGQ3") if q.none
 TREATMENT = next(
     q.code for q in SPEC.multi_select_options("DIAGQ3") if not q.none_option
 )
+OTHER_TREATMENT = SPEC.other_text("DIAGQ3")
+assert OTHER_TREATMENT is not None
 YES = SPEC.yes_code("DIAGQ0")
 NO = next(c for c in SPEC.question("DIAGQ0").codes if c != YES)
 
@@ -54,6 +56,8 @@ class Person:
     level: str | None = None
     #: A ticked "none" treatment option does not make a treatment.
     no_treatment_ticked: bool = False
+    #: A filled "other" treatment text is a treatment (ADR 0004).
+    other_treatment: bool = False
 
 
 def spread(total: int, count: int) -> list[int | None]:
@@ -93,6 +97,9 @@ def responses_for(people: Sequence[Person]) -> pd.DataFrame:
             ],
             dtype=STRING,
         )
+    responses[OTHER_TREATMENT.code] = pd.Series(
+        ["x" if p.other_treatment else None for p in people], dtype=STRING
+    )
     return responses
 
 
@@ -236,6 +243,11 @@ def test_severe_is_the_burdened_feature() -> None:
 def test_none_treatment_option_is_not_a_treatment() -> None:
     metrics = compute([Person(6, 0, YES, no_treatment_ticked=True)])
     assert counts(metrics, category_id("medium")) == (0, 1, 0)
+
+
+def test_filled_other_treatment_is_a_treatment() -> None:
+    metrics = compute([Person(6, 0, YES, other_treatment=True)])
+    assert counts(metrics, category_id("medium")) == (1, 0, 0)
 
 
 def test_treatment_without_diagnosis_does_not_count() -> None:

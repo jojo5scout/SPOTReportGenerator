@@ -479,9 +479,14 @@ named in the id (`...diagnosed`) when it is the respondents with a diagnosis, wh
 `n_missing` counts the respondents whose diagnosis answer is empty and who therefore
 cannot be assigned (respondents without a diagnosis are not part of the group and not
 counted as missing). The type of diagnosis keeps the previous program's denominator, all
-respondents. A ticked "nobody" option (`none_option` in the spec, `DIAGQ2[NIEM]`)
+respondents (confirmed in ADR 0004). A ticked "nobody" option (`none_option` in the spec, `DIAGQ2[NIEM]`)
 overrides the other options of that question in the help-source count and combinations.
-Free-text columns are never read (D14).
+Each of `DIAGQ1` to `DIAGQ3` also has an "other" choice without an option column: a
+pupil who chooses it must type a text, so a filled `[other]` column counts as the
+option `other`, after the spec's options, in the per-option metrics, the number of help
+sources, the help combinations and `treatment_any`; "nobody" overrides it like any
+other help source. Only whether the column is filled is used, never the text (D14 as
+amended in ADR 0004); no other free-text column is read.
 
 Absences (`absences.*`) applies D12 to a question and its follow-up: `FEHLTAGQ0` (yes
 code from the spec) gives one `Proportion` of the respondents who answered it, and
@@ -665,7 +670,7 @@ dtypes), following D12:
 | `symptom_category` | ordered `category` | combined symptom load, `mildnone` < `medium` < `severe`: `severe` if PHQ-9 or GAD-7 ≥ 10 (even if the other score is missing); else, with both scores present, `medium` if one is ≥ 5 and `mildnone` if both are < 5; `NA` where `burdened` is `NA` (a missing score could be ≥ 10) |
 | `phq9_item9`, `impairment` | `Int64` | PHQ-9 item 9 and `SIPHQ`, passed through; empty |
 | `diagnosis` | `boolean` | `DIAGQ0` is the yes code; empty |
-| `treatment_any` | `boolean` | any `DIAGQ3` option except the none option selected; never `NA` (empty option = not selected) |
+| `treatment_any` | `boolean` | any `DIAGQ3` option except the none option selected, or the `DIAGQ3[other]` text filled (ADR 0004); never `NA` (empty option = not selected) |
 | `res_sum` | `Int64` | RES sum; any item empty |
 | `sbi_<subscale>_sum`, `sbi_total_sum` | `Int64` | SBI subscale sums (subscale name in lowercase) and total; any item of that (sub)scale empty |
 
