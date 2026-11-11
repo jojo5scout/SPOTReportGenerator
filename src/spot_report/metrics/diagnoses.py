@@ -3,14 +3,15 @@
 Questions used: ``DIAGQ0`` (diagnosis yes/no, as the feature ``diagnosis``) and the
 multi-select questions ``DIAGQ1`` (type of diagnosis), ``DIAGQ2`` (help sources) and
 ``DIAGQ3`` (treatment). Option codes, the "nobody" option of ``DIAGQ2`` and the
-selected marker come from the questionnaire spec. Free-text columns are never read
-(D14); the ``OTHER`` option of ``DIAGQ1`` and ``DIAGQ3`` is a ticked option of the spec
-and is counted like any other option.
+selected marker come from the questionnaire spec. Each of the three questions also
+has an "other" choice without an option column: a pupil who chooses it has to type a
+text, so a filled "other" text column counts as the option ``other``, after the
+options of the spec (ADR 0004). Only whether the column is filled is used, never the
+text (D14).
 
 Populations
 -----------
-The architecture does not define them, so the definitions of the previous program are
-kept:
+The definitions of the previous program, confirmed in ADR 0004:
 
 * *diagnosis reported*: respondents with an answer to ``DIAGQ0``; an empty answer is
   not shown and counted in ``n_missing`` (D12).
@@ -25,16 +26,22 @@ kept:
 
 The ticked "nobody" option of ``DIAGQ2`` overrides the other help sources, as in the
 previous program: such a respondent uses no help source (usage 0, empty combination).
-This also holds for the optional clinic option. The raw tick of every option, "nobody"
-included, is still counted in ``diagnoses.help.<option>.diagnosed``.
+This also holds for the optional clinic option and for a filled "other" (ADR 0004).
+The raw tick of every option, "nobody" and "other" included, is still counted in
+``diagnoses.help.<option>.diagnosed``.
+
+"Other" counts like any option of its question (ADR 0004). The previous program counted
+it per question but left it out of the number of help sources, of the help
+combinations and of ``treatment_any``, so a pupil with only an "other" help source
+counted as using no help.
 
 Metric ids (a stored contract)
 ------------------------------
-In the ids ``<option>`` is the option code of the spec in lowercase (for 2026.1:
-``DIAGQ1`` ``depr angs esst adhs ptbs bipo psyc bord other``, ``DIAGQ2`` ``niem haus
-kind schu psyo psya selb bera klin``, ``DIAGQ3`` ``not medi ther stat other``). Options
-that are optional in the spec and absent from the responses count as not selected, so
-the ids do not depend on the file.
+In the ids ``<option>`` is the option code of the spec in lowercase, followed by
+``other`` (for 2026.1: ``DIAGQ1`` ``depr angs esst adhs ptbs bipo psyc bord other``,
+``DIAGQ2`` ``niem haus kind schu psyo psya selb bera klin other``, ``DIAGQ3`` ``not medi
+ther stat other``). Options that are optional in the spec and absent from the
+responses count as not selected, so the ids do not depend on the file.
 
 ``diagnoses.diagnosis.reported``
     ``Proportion``: respondents who reported a diagnosis of those who answered.
@@ -44,11 +51,11 @@ the ids do not depend on the file.
     ``Proportion``: help source ticked, of the diagnosed.
 ``diagnoses.help_usage.sources.diagnosed``
     ``Distribution`` of the number of help sources per diagnosed respondent (the
-    options of ``DIAGQ2`` except "nobody"), categories ``0 1 2 3 4plus``.
+    options of ``DIAGQ2`` except "nobody", and "other"), categories ``0 1 2 3 4plus``.
 ``diagnoses.help_patterns.combinations.diagnosed``
     ``PatternCounts``: respondents per exact combination of help sources (options of
-    ``DIAGQ2`` except "nobody", in spec order; the empty combination is stored). The
-    help-source chart picks its columns from it with ``top_patterns``.
+    ``DIAGQ2`` except "nobody" in spec order, then ``other``; the empty combination is
+    stored). The help-source chart picks its columns from it with ``top_patterns``.
 ``diagnoses.treatment.<option>.diagnosed``
     ``Proportion``: treatment option ticked (``not`` included), of the diagnosed.
 
@@ -61,7 +68,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from spot_report.features import option_selected
+from spot_report.features import option_selected, other_given
 from spot_report.metrics.registry import MetricDefinition
 from spot_report.metrics.types import (
     Distribution,
@@ -70,7 +77,7 @@ from spot_report.metrics.types import (
     PatternCounts,
     Proportion,
 )
-from spot_report.questionnaire import Question
+from spot_report.questionnaire import Question, QuestionKind
 
 if TYPE_CHECKING:
     from spot_report.questionnaire import QuestionnaireSpec
@@ -112,6 +119,12 @@ def option_name(group: str, question: Question) -> str:
     return question.code.removeprefix(f"{group}[").removesuffix("]")
 
 
+def choices(spec: QuestionnaireSpec, group: str) -> tuple[Question, ...]:
+    """The option columns of a question in spec order, then its "other" text column."""
+    other = spec.other_text(group)
+    return (*spec.multi_select_options(group), *(() if other is None else (other,)))
+
+
 def definitions(spec: QuestionnaireSpec) -> tuple[MetricDefinition, ...]:
     """The metric definitions of this domain for the options of ``spec``."""
 
@@ -120,9 +133,9 @@ def definitions(spec: QuestionnaireSpec) -> tuple[MetricDefinition, ...]:
             metric_id, kind, DOMAIN, (DIAGNOSIS_QUESTION, *items), SINCE
         )
 
-    types = spec.multi_select_options(TYPE_GROUP)
-    help_sources = spec.multi_select_options(HELP_GROUP)
-    treatments = spec.multi_select_options(TREATMENT_GROUP)
+    types = choices(spec, TYPE_GROUP)
+    help_sources = choices(spec, HELP_GROUP)
+    treatments = choices(spec, TREATMENT_GROUP)
     help_items = tuple(q.code for q in help_sources)
     return (
         MetricDefinition(
@@ -162,14 +175,14 @@ def compute(
         REPORTED_ID: Proportion.from_mask(diagnosed[answered], n_missing=left_out),
     }
 
-    for question in spec.multi_select_options(TYPE_GROUP):
+    for question in choices(spec, TYPE_GROUP):
         ticked = _ticked(responses, question)
         metrics[type_id(option_name(TYPE_GROUP, question))] = Proportion.from_mask(
             ticked & diagnosed
         )
 
     # Everything below is about the diagnosed respondents only.
-    help_sources = spec.multi_select_options(HELP_GROUP)
+    help_sources = choices(spec, HELP_GROUP)
     for question in help_sources:
         metrics[help_id(option_name(HELP_GROUP, question))] = _among_diagnosed(
             _ticked(responses, question), diagnosed, left_out
@@ -182,7 +195,7 @@ def compute(
     )
     metrics[PATTERNS_ID] = PatternCounts.from_selections(effective, n_missing=left_out)
 
-    for question in spec.multi_select_options(TREATMENT_GROUP):
+    for question in choices(spec, TREATMENT_GROUP):
         metrics[treatment_id(option_name(TREATMENT_GROUP, question))] = (
             _among_diagnosed(_ticked(responses, question), diagnosed, left_out)
         )
@@ -190,7 +203,10 @@ def compute(
 
 
 def _ticked(responses: pd.DataFrame, question: Question) -> pd.Series:
-    """Plain boolean Series: option ticked (empty or absent column: not selected)."""
+    """Plain boolean Series: option ticked or "other" text filled (empty or absent
+    column: not selected)."""
+    if question.kind is QuestionKind.FREE_TEXT:
+        return other_given(responses, question).astype(bool)
     return option_selected(responses, question).astype(bool)
 
 
@@ -207,8 +223,8 @@ def _effective_help(
 ) -> pd.DataFrame:
     """Help sources the diagnosed use: one boolean column per option except "nobody".
 
-    Columns are named by option code, in spec order. The "nobody" option, if ticked,
-    clears all other options of that respondent.
+    Columns are named by option code, in spec order, then ``other``. The "nobody"
+    option, if ticked, clears all other options of that respondent, "other" included.
     """
     nobody = pd.Series(False, index=responses.index)
     chosen: dict[str, pd.Series] = {}

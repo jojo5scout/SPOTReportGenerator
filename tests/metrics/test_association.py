@@ -39,6 +39,8 @@ NONE_OPTION = next(q.code for q in SPEC.multi_select_options("DIAGQ3") if q.none
 TREATMENT = next(
     q.code for q in SPEC.multi_select_options("DIAGQ3") if not q.none_option
 )
+OTHER_TREATMENT = SPEC.other_text("DIAGQ3")
+assert OTHER_TREATMENT is not None
 YES = SPEC.yes_code("DIAGQ0")
 NO = next(c for c in SPEC.question("DIAGQ0").codes if c != YES)
 
@@ -54,6 +56,8 @@ class Person:
     level: str | None = None
     #: A ticked "none" treatment option does not make a treatment.
     no_treatment_ticked: bool = False
+    #: A filled "other" treatment text is a treatment (ADR 0004).
+    other_treatment: bool = False
 
 
 def spread(total: int, count: int) -> list[int | None]:
@@ -93,6 +97,9 @@ def responses_for(people: Sequence[Person]) -> pd.DataFrame:
             ],
             dtype=STRING,
         )
+    responses[OTHER_TREATMENT.code] = pd.Series(
+        ["x" if p.other_treatment else None for p in people], dtype=STRING
+    )
     return responses
 
 
@@ -117,11 +124,11 @@ PEOPLE = [
     Person(None, 15, YES, treated=True, level=G2),  # severe (PHQ-9 missing), treated
     Person(20, 20, NO, level=None),  # severe, not_diagnosed, no level
     Person(10, 0, NO, level=G4),  # severe at the cut-off, not_diagnosed
-    # moderate: both present, none at 10, one at 5-9
-    Person(7, 1, NO, level=G1),  # moderate, not_diagnosed
-    Person(4, 5, YES, level=G3, no_treatment_ticked=True),  # moderate, untreated
-    Person(9, 9, YES, treated=True, level=G4),  # moderate, diagnosed_treated
-    Person(5, 0, NO, level=G1),  # moderate at the lower bound, not_diagnosed
+    # medium: both present, none at 10, one at 5-9
+    Person(7, 1, NO, level=G1),  # medium, not_diagnosed
+    Person(4, 5, YES, level=G3, no_treatment_ticked=True),  # medium, untreated
+    Person(9, 9, YES, treated=True, level=G4),  # medium, diagnosed_treated
+    Person(5, 0, NO, level=G1),  # medium at the lower bound, not_diagnosed
     # mildnone: both present and below 5
     Person(0, 4, NO, treated=True, level=G2),  # mildnone, not_diagnosed (treatment
     # does not matter without a diagnosis)
@@ -142,7 +149,7 @@ def counts(metrics: MetricSet, metric_id: str) -> tuple[int, ...]:
 
 def test_symptom_category_distribution_and_undetermined_respondents() -> None:
     metric = distribution(compute(PEOPLE), CATEGORY_ID)
-    assert metric.categories == ("mildnone", "moderate", "severe")
+    assert metric.categories == ("mildnone", "medium", "severe")
     assert metric.categories == SYMPTOM_CATEGORIES
     assert metric.counts == (2, 4, 5)
     # Three respondents cannot be assigned: a score below 10 and a missing score.
@@ -153,7 +160,7 @@ def test_status_distributions_of_all_respondents() -> None:
     metrics = compute(PEOPLE)
     assert distribution(metrics, category_id("severe")).categories == STATUS_CATEGORIES
     assert counts(metrics, category_id("severe")) == (2, 1, 2)
-    assert counts(metrics, category_id("moderate")) == (1, 1, 2)
+    assert counts(metrics, category_id("medium")) == (1, 1, 2)
     # Mildnone: one not diagnosed; the respondent with an empty DIAGQ0 is n_missing.
     mildnone = distribution(metrics, category_id("mildnone"))
     assert (mildnone.counts, mildnone.n_missing) == ((0, 0, 1), 1)
@@ -164,7 +171,7 @@ def test_status_distributions_by_level() -> None:
     metrics = compute(PEOPLE)
     by_level = {
         "severe": {G1: (1, 1, 0), G2: (1, 0, 0), G3: (0, 0, 0), G4: (0, 0, 1)},
-        "moderate": {G1: (0, 0, 2), G2: (0, 0, 0), G3: (0, 1, 0), G4: (1, 0, 0)},
+        "medium": {G1: (0, 0, 2), G2: (0, 0, 0), G3: (0, 1, 0), G4: (1, 0, 0)},
         "mildnone": {G1: (0, 0, 0), G2: (0, 0, 1), G3: (0, 0, 0), G4: (0, 0, 0)},
     }
     for category, expected in by_level.items():
@@ -198,10 +205,10 @@ def test_levels_add_up_to_the_overall_metric_when_every_level_is_known() -> None
     ("phq9", "gad7", "expected"),
     [
         (10, 0, "severe"),
-        (9, 9, "moderate"),
+        (9, 9, "medium"),
         (4, 4, "mildnone"),
-        (5, 4, "moderate"),
-        (4, 5, "moderate"),
+        (5, 4, "medium"),
+        (4, 5, "medium"),
         (12, None, "severe"),  # the present score decides
         (None, 10, "severe"),
         (9, None, None),  # the missing score could be 10 or more
@@ -235,12 +242,17 @@ def test_severe_is_the_burdened_feature() -> None:
 
 def test_none_treatment_option_is_not_a_treatment() -> None:
     metrics = compute([Person(6, 0, YES, no_treatment_ticked=True)])
-    assert counts(metrics, category_id("moderate")) == (0, 1, 0)
+    assert counts(metrics, category_id("medium")) == (0, 1, 0)
+
+
+def test_filled_other_treatment_is_a_treatment() -> None:
+    metrics = compute([Person(6, 0, YES, other_treatment=True)])
+    assert counts(metrics, category_id("medium")) == (1, 0, 0)
 
 
 def test_treatment_without_diagnosis_does_not_count() -> None:
     metrics = compute([Person(6, 0, NO, treated=True)])
-    assert counts(metrics, category_id("moderate")) == (0, 0, 1)
+    assert counts(metrics, category_id("medium")) == (0, 0, 1)
 
 
 def test_empty_diagnosis_is_left_out_of_the_status_partition() -> None:
@@ -307,7 +319,7 @@ def test_definition_items_are_spec_columns() -> None:
 
 def test_expected_ids() -> None:
     expected = {"association.symptoms.category"}
-    for category in ("mildnone", "moderate", "severe"):
+    for category in ("mildnone", "medium", "severe"):
         expected.add(f"association.{category}.diagnosis_status")
         expected |= {
             f"association.{category}.diagnosis_status.gym{n}" for n in range(1, 5)
@@ -322,6 +334,9 @@ def test_domain_is_part_of_compute_metrics() -> None:
 
 
 # --- legacy parity ------------------------------------------------------------------
+
+#: Legacy names of the symptom categories (ADR 0004 renamed ``moderate``).
+LEGACY_CATEGORY = {"mildnone": "mildnone", "medium": "moderate", "severe": "severe"}
 
 #: Legacy status columns as sums of the new status categories.
 LEGACY_STATUS = {
@@ -352,7 +367,10 @@ def test_legacy_parity(dataset: str) -> None:
 
     def check_table(prefix: str, category: str, metric: Distribution) -> None:
         for status in LEGACY_STATUS:
-            check(f"{prefix}.{category}.{status}", _legacy_count(metric, status))
+            check(
+                f"{prefix}.{LEGACY_CATEGORY[category]}.{status}",
+                _legacy_count(metric, status),
+            )
 
     for category in SYMPTOM_CATEGORIES:
         overall = distribution(metrics, category_id(category))
@@ -365,10 +383,10 @@ def test_legacy_parity(dataset: str) -> None:
             )
 
     severe = distribution(metrics, category_id("severe"))
-    moderate = distribution(metrics, category_id("moderate"))
+    medium = distribution(metrics, category_id("medium"))
     check("assoc.overlap.symp_and_diag_n", _legacy_count(severe, "known_diag"))
     check("assoc.overlap.symp_diag_treated_n", _legacy_count(severe, "treated"))
     check("assoc.overlap.symp_no_diag_n", _legacy_count(severe, "unknown_diag"))
-    check("assoc.overlap.moderate_no_diag_n", _legacy_count(moderate, "unknown_diag"))
+    check("assoc.overlap.moderate_no_diag_n", _legacy_count(medium, "unknown_diag"))
 
     assert checked == set(expected.under("assoc"))

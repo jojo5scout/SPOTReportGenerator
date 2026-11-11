@@ -11,6 +11,7 @@ from spot_report.metrics.registry import (
     RegistryError,
 )
 from spot_report.metrics.types import (
+    Count,
     Distribution,
     Metric,
     MetricError,
@@ -28,6 +29,7 @@ from spot_report.metrics.types import (
 
 __all__ = [
     "METRICS_VERSION",
+    "Count",
     "Distribution",
     "Metric",
     "MetricDefinition",

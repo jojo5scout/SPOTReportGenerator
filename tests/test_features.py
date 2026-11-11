@@ -176,7 +176,7 @@ def test_columns_and_dtypes_follow_the_contract() -> None:
         == SYMPTOM_CATEGORIES
         == (
             "mildnone",
-            "moderate",
+            "medium",
             "severe",
         )
     )
@@ -339,9 +339,9 @@ def test_burdened_truth_table(
 SYMPTOM_CATEGORY_TABLE = [
     (0, 0, "mildnone"),
     (4, 4, "mildnone"),
-    (5, 0, "moderate"),
-    (0, 5, "moderate"),
-    (9, 9, "moderate"),
+    (5, 0, "medium"),
+    (0, 5, "medium"),
+    (9, 9, "medium"),
     (10, 0, "severe"),
     (0, 10, "severe"),
     (27, 21, "severe"),
@@ -379,9 +379,12 @@ TREATMENT_CASES = [
     ({"DIAGQ3[MEDI]": "Y"}, True),
     ({"DIAGQ3[THER]": "Y"}, True),
     ({"DIAGQ3[THER]": "Y", "DIAGQ3[NOT]": "Y"}, True),  # as in the previous program
-    ({"DIAGQ3[STAT]": None, "DIAGQ3[OTHER]": None}, False),  # optional, present, empty
+    ({"DIAGQ3[STAT]": None}, False),  # optional, present, empty
     ({"DIAGQ3[STAT]": "Y"}, True),  # optional option present and selected
-    ({"DIAGQ3[OTHER]": "Y"}, True),
+    # A filled "other" text is a chosen option (ADR 0004); only filled-or-not counts.
+    ({"DIAGQ3[other]": "x"}, True),
+    ({"DIAGQ3[other]": "   "}, False),
+    ({"DIAGQ3[other]": "x", "DIAGQ3[NOT]": "Y"}, True),
 ]
 
 

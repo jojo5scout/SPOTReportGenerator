@@ -14,15 +14,16 @@ three-valued logic (decision D12: a missing score is never replaced by a value):
 
 * ``severe``: PHQ-9 or GAD-7 at or above 10, even if the other score is missing
   (this is exactly ``burdened``);
-* ``moderate``: both scores present, both below 10, at least one at or above 5;
+* ``medium``: both scores present, both below 10, at least one at or above 5;
 * ``mildnone``: both scores present and both below 5;
 * ``NA`` otherwise (a present score below 10 and a missing score, or both missing),
   because the missing score could be 10 or more. Such a respondent is counted in no
   category.
 
 This is the same reading as for ``burdened``; the previous program put every
-respondent with at least one valid score into a category. The name ``moderate`` is the
-previous program's and means the 5-9 band here; it is not the PHQ-9 band of that name.
+respondent with at least one valid score into a category. ``medium`` is the previous
+program's ``moderate`` (the 5-9 band), renamed so that it cannot be mistaken for the
+PHQ-9/GAD-7 band ``moderate`` (ADR 0004); its legacy keys keep the old name.
 
 Diagnosis status
 ----------------
@@ -53,17 +54,17 @@ The overlap counts of the previous program are rows of these metrics (symptoms
 ``burdened`` is the category ``severe``): symptoms and diagnosis = ``severe`` known
 (treated + untreated), symptoms and diagnosis and treated = ``severe`` treated,
 symptoms without diagnosis = ``severe`` not diagnosed, moderate without diagnosis =
-``moderate`` not diagnosed.
+``medium`` not diagnosed.
 
 Metric ids (a stored contract)
 ------------------------------
-In the ids ``<category>`` is ``mildnone``, ``moderate`` or ``severe`` and ``<level>``
+In the ids ``<category>`` is ``mildnone``, ``medium`` or ``severe`` and ``<level>``
 the code of a ``DQSTUFE`` answer of the spec in lowercase (for 2026.1: ``gym1`` to
 ``gym4``).
 
 ``association.symptoms.category``
     ``Distribution`` of the symptom category over all respondents, categories
-    ``mildnone moderate severe``.
+    ``mildnone medium severe``.
 ``association.<category>.diagnosis_status``
     ``Distribution`` of the diagnosis status among the respondents of the category,
     categories ``diagnosed_treated diagnosed_untreated not_diagnosed``.

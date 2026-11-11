@@ -46,7 +46,8 @@ def frame(rows: Sequence[tuple[str | None, Ticks]]) -> pd.DataFrame:
 
     Every row is the answer to DIAGQ0 and the ticked options per group; an option
     that is not ticked is an empty cell. Optional option columns are present only if
-    some row ticks them.
+    some row ticks them. The option ``other`` fills the group's "other" text column
+    with a placeholder (only filled-or-not is used, ADR 0004).
     """
     columns: dict[str, list[str | None]] = {
         "DIAGQ0": [answer for answer, _ in rows],
@@ -60,6 +61,11 @@ def frame(rows: Sequence[tuple[str | None, Ticks]]) -> pd.DataFrame:
                     option.selected if name in ticks.get(group, ()) else None
                     for _, ticks in rows
                 ]
+        other = SPEC.other_text(group)
+        assert other is not None
+        columns[other.code] = [
+            "x" if "other" in ticks.get(group, ()) else None for _, ticks in rows
+        ]
     return pd.DataFrame(
         {code: pd.Series(v, dtype=STRING) for code, v in columns.items()}
     )
@@ -133,7 +139,7 @@ def test_types_are_counted_for_diagnosed_respondents_of_all_respondents() -> Non
         "BIPO": 1,
         "PSYC": 1,
         "BORD": 0,  # optional column absent: nobody selected it
-        "OTHER": 0,
+        "other": 0,
     }
     for option, count in expected.items():
         metric = proportion(metrics, type_id(option))
@@ -152,6 +158,7 @@ def test_help_sources_among_the_diagnosed() -> None:
         "SELB": 2,
         "BERA": 1,
         "KLIN": 1,
+        "other": 0,
     }
     for option, count in expected.items():
         metric = proportion(metrics, help_id(option))
@@ -186,6 +193,7 @@ def test_help_combinations_by_hand() -> None:
         "SELB",
         "BERA",
         "KLIN",
+        "other",
     )
     assert metric.patterns == (
         (),
@@ -214,10 +222,43 @@ def test_chart_selection_from_the_combinations() -> None:
 
 def test_treatment_among_the_diagnosed() -> None:
     metrics = compute(frame(ROWS))
-    expected = {"NOT": 1, "MEDI": 2, "THER": 2, "STAT": 0, "OTHER": 0}
+    expected = {"NOT": 1, "MEDI": 2, "THER": 2, "STAT": 0, "other": 0}
     for option, count in expected.items():
         metric = proportion(metrics, treatment_id(option))
         assert (metric.k, metric.n, metric.n_missing) == (count, 7, 1), option
+
+
+# Four respondents who chose "other" (ADR 0004). Rows 0-2 diagnosed, row 3 not.
+OTHER_ROWS: list[tuple[str | None, Ticks]] = [
+    ("Ja", {"DIAGQ1": ["other"], "DIAGQ2": ["other"], "DIAGQ3": ["other"]}),
+    ("Ja", {"DIAGQ1": ["DEPR"], "DIAGQ2": ["SCHU", "other"], "DIAGQ3": ["NOT"]}),
+    ("Ja", {"DIAGQ2": ["NIEM", "other"]}),
+    ("Nein", {"DIAGQ1": ["other"]}),
+]
+
+
+def test_filled_other_text_counts_as_an_option() -> None:
+    metrics = compute(frame(OTHER_ROWS))
+    assert proportion(metrics, type_id("other")) == Proportion(1, 4, 0)  # row 0
+    assert proportion(metrics, help_id("other")) == Proportion(3, 3, 0)  # raw ticks
+    assert proportion(metrics, treatment_id("other")) == Proportion(1, 3, 0)
+
+
+def test_other_is_a_help_source_and_nobody_overrides_it() -> None:
+    metrics = compute(frame(OTHER_ROWS))
+    # Sources: row 0 "other" only (1, not "no help"), row 1 SCHU + other (2), row 2
+    # nobody overrides "other" (0).
+    assert metrics_usage(metrics).counts == (1, 1, 1, 0, 0)
+    patterns = metrics[PATTERNS_ID]
+    assert isinstance(patterns, PatternCounts)
+    assert patterns.patterns == ((), ("other",), ("SCHU", "other"))
+    assert patterns.counts == (1, 1, 1)
+
+
+def test_whitespace_in_the_other_text_is_not_an_answer() -> None:
+    responses = frame([("Ja", {})])
+    responses["DIAGQ2[other]"] = pd.Series(["  "], dtype=STRING)
+    assert proportion(compute(responses), help_id("other")) == Proportion(0, 1, 0)
 
 
 def test_nobody_option_comes_from_the_spec() -> None:
@@ -305,15 +346,22 @@ def test_definition_items_are_spec_columns() -> None:
             SPEC.question(item)
 
 
-def test_no_free_text_column_is_used() -> None:
-    free_text = set(SPEC.free_text_columns)
-    for definition in diagnoses.definitions(SPEC):
-        assert not free_text & set(definition.items)
+def test_only_the_other_text_columns_are_used() -> None:
+    """Free text is used only as filled-or-not "other" (D14 as amended, ADR 0004)."""
+    others = {
+        text.code for group in GROUPS if (text := SPEC.other_text(group)) is not None
+    }
+    assert others == {"DIAGQ1[other]", "DIAGQ2[other]", "DIAGQ3[other]"}
+    used = {i for d in diagnoses.definitions(SPEC) for i in d.items}
+    assert used & set(SPEC.free_text_columns) == others
 
 
 def test_expected_ids() -> None:
     types = ("depr", "angs", "esst", "adhs", "ptbs", "bipo", "psyc", "bord", "other")
-    helps = ("niem", "haus", "kind", "schu", "psyo", "psya", "selb", "bera", "klin")
+    helps = (
+        *("niem", "haus", "kind", "schu", "psyo", "psya", "selb", "bera", "klin"),
+        "other",
+    )
     treatments = ("not", "medi", "ther", "stat", "other")
     assert {d.id for d in diagnoses.definitions(SPEC)} == {
         "diagnoses.diagnosis.reported",
@@ -337,6 +385,7 @@ LEGACY_TYPES = {
     "BiPo": "BIPO",
     "Schizo": "PSYC",
     "Bord": "BORD",
+    "andereDiag": "other",
 }
 #: Chart columns of the legacy help-source plot: (combination size, number of columns).
 LEGACY_CHART = ((1, 2), (2, 2), (3, 2))
@@ -346,8 +395,17 @@ def _read(dataset: str) -> pd.DataFrame:
     return read_responses(FIXTURE_DIR / f"{dataset}.xlsx", "xlsx", SPEC)
 
 
-def _share(metric: Proportion) -> float | None:
-    return metric.share
+def _without_other(patterns: PatternCounts) -> PatternCounts:
+    """The combinations without "other", as the previous program's chart had them."""
+    options = tuple(o for o in patterns.options if o != "other")
+    merged: dict[tuple[str, ...], int] = {}
+    for pattern, count in zip(patterns.patterns, patterns.counts, strict=True):
+        key = tuple(o for o in pattern if o != "other")
+        merged[key] = merged.get(key, 0) + count
+    order = sorted(merged, key=lambda p: (len(p), [options.index(o) for o in p]))
+    return PatternCounts(
+        options, tuple(order), tuple(merged[p] for p in order), patterns.n_missing
+    )
 
 
 @pytest.mark.parametrize("dataset", expected_datasets())
@@ -380,6 +438,7 @@ def test_legacy_parity(dataset: str) -> None:
         "BERA",
         "KLIN",
         "NIEM",
+        "OTHER",
     ):
         metric = proportion(metrics, help_id(option))
         check(f"diagnoses.help.count.{option}", metric.k)
@@ -398,6 +457,8 @@ def test_legacy_parity(dataset: str) -> None:
 
     patterns = metrics[PATTERNS_ID]
     assert isinstance(patterns, PatternCounts)
+    # The previous chart showed the named sources only (ADR 0004).
+    patterns = _without_other(patterns)
     columns = [
         entry
         for size, columns_of_size in LEGACY_CHART
@@ -408,7 +469,7 @@ def test_legacy_parity(dataset: str) -> None:
         name = "+".join(pattern) or "empty"
         check(f"diagnoses.help_upset.K{position}.{name}", count)
 
-    for option in ("THER", "MEDI", "STAT", "NOT"):
+    for option in ("THER", "MEDI", "STAT", "NOT", "OTHER"):
         metric = proportion(metrics, treatment_id(option))
         check(f"diagnoses.treatment.count.{option}", metric.k)
         check(f"diagnoses.treatment.pct.{option}", metric.share)

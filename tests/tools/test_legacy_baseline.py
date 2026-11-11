@@ -10,8 +10,8 @@ import json
 
 import pytest
 
+from tools import legacy_baseline
 from tools.legacy_baseline import (
-    EXCLUDED_KEYS,
     KIND_PERCENT,
     KIND_STATISTIC,
     BaselineError,
@@ -56,8 +56,9 @@ def _pct(text: str, numerator: int, denominator: int) -> Tagged:
     )
 
 
-def test_flatten_context() -> None:
-    excluded = next(iter(EXCLUDED_KEYS))
+def test_flatten_context(monkeypatch: pytest.MonkeyPatch) -> None:
+    excluded = "other_chapter.left_out"
+    monkeypatch.setattr(legacy_baseline, "EXCLUDED_KEYS", {excluded: "reason"})
     context = {
         "chapter": {
             "n": 12,

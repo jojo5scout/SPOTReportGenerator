@@ -34,6 +34,7 @@ import pandas as pd
 __all__ = [
     "METRIC_KINDS",
     "METRIC_TYPES",
+    "Count",
     "Distribution",
     "Metric",
     "MetricError",
@@ -252,6 +253,37 @@ class Proportion(Metric):
     def from_dict(cls, data: Mapping[str, Any]) -> Proportion:
         _check_payload(cls, data, ("k", "n", "n_missing"))
         return _construct(cls, k=data["k"], n=data["n"], n_missing=data["n_missing"])
+
+
+# --------------------------------------------------------------------------------------
+# Count
+# --------------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Count(Metric):
+    """A number of respondents that is not a share of anything, e.g. all responses.
+
+    ``n_missing`` keeps the common interface; it is 0 unless a metric defines it.
+    """
+
+    kind: ClassVar[str] = "count"
+
+    n: int
+    n_missing: int = 0
+
+    def __post_init__(self) -> None:
+        owner = type(self).__name__
+        _count(owner, "n", self.n)
+        _count(owner, "n_missing", self.n_missing)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"kind": self.kind, "n": self.n, "n_missing": self.n_missing}
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> Count:
+        _check_payload(cls, data, ("n", "n_missing"))
+        return _construct(cls, n=data["n"], n_missing=data["n_missing"])
 
 
 # --------------------------------------------------------------------------------------
@@ -647,6 +679,7 @@ def top_patterns(
 #: All metric types. A new kind is added here and nowhere else.
 METRIC_TYPES: tuple[type[Metric], ...] = (
     Proportion,
+    Count,
     Summary,
     Distribution,
     PatternCounts,

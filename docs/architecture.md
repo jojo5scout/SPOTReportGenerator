@@ -349,6 +349,11 @@ class Proportion:          # "k of n"
     n_missing: int
 
 @dataclass(frozen=True)
+class Count:               # a number of respondents that is not a share, e.g. all
+    n: int
+    n_missing: int         # 0 unless the metric defines it
+
+@dataclass(frozen=True)
 class Summary:             # numeric scale or score
     n: int
     n_missing: int
@@ -383,7 +388,7 @@ options first, then by option order, so equal metrics give identical JSON.
 Computation conventions are fixed here because legacy parity and comparisons between
 waves depend on them: standard deviation with `ddof=1`, quantiles with the NumPy/pandas
 default method. The set of types may grow (`PatternCounts` was added for multi-select
-patterns), but every type must be JSON-serialisable and must contain enough information for statistical
+patterns, `Count` for the number of respondents), but every type must be JSON-serialisable and must contain enough information for statistical
 comparison (counts and denominators, or mean, SD and n).
 
 Details fixed in `metrics/types.py`:
@@ -470,8 +475,10 @@ compares the numbers with the legacy baseline (section 12).
 
 Demography (`demography.gender.distribution`, `demography.level.distribution`,
 `demography.age.distribution`) sets the pattern: one `Distribution` per question, in
-spec order, with `n + n_missing` equal to the number of respondents. There is no
-separate respondent count metric; the total is that sum.
+spec order, with `n + n_missing` equal to the number of respondents. The number of
+respondents itself is `demography.respondents.count`, a `Count` of the response rows
+(ADR 0004): the most important number of the report, used in the methods section and
+by the privacy rules.
 
 Diagnoses (`diagnoses.*`) shows the group conventions for questions that apply to a
 subgroup and for multi-select questions: one `Proportion` per option; the population is
@@ -479,9 +486,14 @@ named in the id (`...diagnosed`) when it is the respondents with a diagnosis, wh
 `n_missing` counts the respondents whose diagnosis answer is empty and who therefore
 cannot be assigned (respondents without a diagnosis are not part of the group and not
 counted as missing). The type of diagnosis keeps the previous program's denominator, all
-respondents. A ticked "nobody" option (`none_option` in the spec, `DIAGQ2[NIEM]`)
+respondents (confirmed in ADR 0004). A ticked "nobody" option (`none_option` in the spec, `DIAGQ2[NIEM]`)
 overrides the other options of that question in the help-source count and combinations.
-Free-text columns are never read (D14).
+Each of `DIAGQ1` to `DIAGQ3` also has an "other" choice without an option column: a
+pupil who chooses it must type a text, so a filled `[other]` column counts as the
+option `other`, after the spec's options, in the per-option metrics, the number of help
+sources, the help combinations and `treatment_any`; "nobody" overrides it like any
+other help source. Only whether the column is filled is used, never the text (D14 as
+amended in ADR 0004); no other free-text column is read.
 
 Absences (`absences.*`) applies D12 to a question and its follow-up: `FEHLTAGQ0` (yes
 code from the spec) gives one `Proportion` of the respondents who answered it, and
@@ -532,15 +544,15 @@ applied by the presentation.
 
 Resilience (`resilience.res.*`) holds the `Summary` of the `RES` sum (`resilience.res.total`),
 the same for the burdened (`.total.burdened`, `burdened == True`) and for the non-burdened
-(`.total.nonburdened`), and the `Distribution` of the sum over every possible score
+(`.total.nonburdened`, `burdened == False`: both symptom scores present and below their
+cut-offs, ADR 0004), and the `Distribution` of the sum over every possible score
 (`resilience.res.histogram`, categories `"0"` to the maximum sum derived from the spec's
 item count and range). A respondent without a sum (an empty item, D12) is `n_missing`;
-respondents outside a subgroup are not counted as missing. The architecture does not
-define the non-burdened group; the previous report's definition is kept: `burdened` is not
-`True` and at least one of the PHQ-9 and GAD-7 sums is present. With complete symptom
-data this equals `burdened == False`; where one score is missing and the other is below
-its cut-off, the respondent is non-burdened here although `burdened` is `NA`. The
-reference value and the lines of the previous histogram are presentation.
+respondents outside a subgroup, including those whose `burdened` is `NA`, are not counted
+as missing. The previous report also counted a respondent with one score below its
+cut-off and the other missing as non-burdened; with complete symptom data both
+definitions agree. The reference value and the lines of the previous histogram are
+presentation.
 
 ### 6.3 MetricSet and snapshot
 
@@ -599,7 +611,7 @@ CREATE TABLE wave (
 CREATE TABLE metric (
     wave_id   INTEGER NOT NULL REFERENCES wave(id) ON DELETE CASCADE,
     metric_id TEXT NOT NULL,
-    kind      TEXT NOT NULL,     -- proportion | summary | distribution | pattern_counts
+    kind      TEXT NOT NULL,     -- proportion | count | summary | distribution | pattern_counts
     payload   TEXT NOT NULL,     -- JSON
     PRIMARY KEY (wave_id, metric_id)
 );
@@ -662,10 +674,10 @@ dtypes), following D12:
 | `phq9_severity`, `gad7_severity` | ordered `category` | standard bands (PHQ-9 `minimal` 0–4, `mild` 5–9, `moderate` 10–14, `moderately_severe` 15–19, `severe` 20–27; GAD-7 the same up to `severe` 15–21); sum `NA` |
 | `phq9_cutoff`, `gad7_cutoff` | `boolean` | sum ≥ 10; sum `NA` |
 | `burdened` | `boolean` | PHQ-9 or GAD-7 cut-off, three-valued: `True` if one cut-off is `True`, `False` only if both are `False`; `NA` otherwise |
-| `symptom_category` | ordered `category` | combined symptom load, `mildnone` < `moderate` < `severe`: `severe` if PHQ-9 or GAD-7 ≥ 10 (even if the other score is missing); else, with both scores present, `moderate` if one is ≥ 5 and `mildnone` if both are < 5; `NA` where `burdened` is `NA` (a missing score could be ≥ 10) |
+| `symptom_category` | ordered `category` | combined symptom load, `mildnone` < `medium` < `severe`: `severe` if PHQ-9 or GAD-7 ≥ 10 (even if the other score is missing); else, with both scores present, `medium` if one is ≥ 5 and `mildnone` if both are < 5; `NA` where `burdened` is `NA` (a missing score could be ≥ 10) |
 | `phq9_item9`, `impairment` | `Int64` | PHQ-9 item 9 and `SIPHQ`, passed through; empty |
 | `diagnosis` | `boolean` | `DIAGQ0` is the yes code; empty |
-| `treatment_any` | `boolean` | any `DIAGQ3` option except the none option selected; never `NA` (empty option = not selected) |
+| `treatment_any` | `boolean` | any `DIAGQ3` option except the none option selected, or the `DIAGQ3[other]` text filled (ADR 0004); never `NA` (empty option = not selected) |
 | `res_sum` | `Int64` | RES sum; any item empty |
 | `sbi_<subscale>_sum`, `sbi_total_sum` | `Int64` | SBI subscale sums (subscale name in lowercase) and total; any item of that (sub)scale empty |
 

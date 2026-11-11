@@ -168,6 +168,17 @@ class QuestionnaireSpec:
             raise KeyError(f"Column {code} is not a yes/no question")
         return question.yes_code
 
+    def other_text(self, group: str) -> Question | None:
+        """The free-text "other" column of a multi-select question, if it has one."""
+        columns = [
+            q
+            for q in self.questions
+            if q.kind is QuestionKind.FREE_TEXT and q.group == group
+        ]
+        if len(columns) > 1:
+            raise KeyError(f"Multi-select question {group} has several text columns")
+        return columns[0] if columns else None
+
     def multi_select_options(self, group: str) -> tuple[Question, ...]:
         """The option columns of a multi-select question, in spec order."""
         options = tuple(

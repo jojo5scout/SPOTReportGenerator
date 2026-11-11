@@ -41,13 +41,13 @@ Feature columns (a contract for the metric domains)
     because then it cannot be determined.
 ``symptom_category`` (ordered ``category``)
     Combined symptom load, categories :data:`SYMPTOM_CATEGORIES` ``mildnone`` <
-    ``moderate`` < ``severe``, from the two sums in three-valued logic: ``severe`` if
+    ``medium`` < ``severe``, from the two sums in three-valued logic: ``severe`` if
     at least one score is at or above 10 (``burdened`` is ``True``, even if the other
-    score is missing); otherwise, if both scores are present, ``moderate`` if at least
-    one is at or above :data:`SYMPTOM_MODERATE_FROM` (5) and ``mildnone`` if both are
+    score is missing); otherwise, if both scores are present, ``medium`` if at least
+    one is at or above :data:`SYMPTOM_MEDIUM_FROM` (5) and ``mildnone`` if both are
     below it; ``NA`` when ``burdened`` is ``NA``, because a missing score could be 10
-    or more. (The names are those of the previous program; ``moderate`` here is the
-    5-9 band, not the PHQ-9 band ``moderate``.)
+    or more. (``medium`` is the previous program's ``moderate``, renamed so that it
+    cannot be mistaken for the PHQ-9/GAD-7 band ``moderate``, 10-14; ADR 0004.)
 ``phq9_item9`` (``Int64``)
     The ninth PHQ-9 item (the ninth column of the scale in the spec), passed through.
 ``impairment`` (``Int64``)
@@ -55,7 +55,8 @@ Feature columns (a contract for the metric domains)
 ``diagnosis`` (``boolean``)
     ``DIAGQ0`` equals the spec's yes code; ``NA`` when empty.
 ``treatment_any`` (``boolean``, never ``NA``)
-    At least one ``DIAGQ3`` option other than the spec's ``none_option`` is selected.
+    At least one ``DIAGQ3`` option other than the spec's ``none_option`` is selected,
+    or the "other" text of ``DIAGQ3`` is filled (ADR 0004).
 ``res_sum`` (``Int64``)
     RES sum (0-40).
 ``sbi_<subscale>_sum`` (``Int64``)
@@ -79,6 +80,9 @@ Intentional differences from the previous program
   several spellings of yes) and is ``NA`` when empty (previously ``False``).
 * No warnings are returned for absent columns: required columns are guaranteed by
   validation, absent optional multi-select options count as not selected.
+* A filled "other" text counts as a chosen option (ADR 0004); the previous program
+  ignored it for ``treatment_any``. Only whether the text is filled is used, never
+  the text itself (D14).
 """
 
 from __future__ import annotations
@@ -101,13 +105,14 @@ __all__ = [
     "PHQ9_SEVERITY_DTYPE",
     "SYMPTOM_CATEGORIES",
     "SYMPTOM_CATEGORY_DTYPE",
-    "SYMPTOM_MODERATE_FROM",
+    "SYMPTOM_MEDIUM_FROM",
     "FeatureInputError",
     "any_selected",
     "compute_features",
     "feature_columns",
     "integer_features",
     "option_selected",
+    "other_given",
     "sbi_subscale_column",
     "scale_sum",
     "severity",
@@ -132,8 +137,8 @@ PHQ9_CUTOFF = 10
 GAD7_CUTOFF = 10
 
 #: Lowest score of the "mild" band of both scales (5-9); the lower bound of the
-#: ``moderate`` symptom category.
-SYMPTOM_MODERATE_FROM = 5
+#: ``medium`` symptom category.
+SYMPTOM_MEDIUM_FROM = 5
 
 #: Severity bands as (category code, lowest score of the band), in ascending order.
 #: The codes are stored as ``Distribution`` categories; never rename them.
@@ -155,7 +160,7 @@ PHQ9_SEVERITY_CATEGORIES: tuple[str, ...] = tuple(c for c, _ in PHQ9_SEVERITY_BA
 GAD7_SEVERITY_CATEGORIES: tuple[str, ...] = tuple(c for c, _ in GAD7_SEVERITY_BANDS)
 #: Categories of ``symptom_category``, lowest load first. Stored (metric ids and
 #: ``Distribution`` categories of the association domain); never rename them.
-SYMPTOM_CATEGORIES: tuple[str, ...] = ("mildnone", "moderate", "severe")
+SYMPTOM_CATEGORIES: tuple[str, ...] = ("mildnone", "medium", "severe")
 SYMPTOM_CATEGORY_DTYPE = pd.CategoricalDtype(list(SYMPTOM_CATEGORIES), ordered=True)
 PHQ9_SEVERITY_DTYPE = pd.CategoricalDtype(list(PHQ9_SEVERITY_CATEGORIES), ordered=True)
 GAD7_SEVERITY_DTYPE = pd.CategoricalDtype(list(GAD7_SEVERITY_CATEGORIES), ordered=True)
@@ -302,19 +307,19 @@ def symptom_category(
     """The symptom category of each respondent; ``NA`` where the scores do not decide.
 
     ``severe`` where ``burdened`` is ``True``. Where it is ``False`` both scores are
-    present and below 10, so ``moderate`` (a score of 5 or more) and ``mildnone`` are
+    present and below 10, so ``medium`` (a score of 5 or more) and ``mildnone`` are
     exact. Where it is ``NA`` a missing score could still be 10 or more: ``NA``.
     """
     determined = burdened.notna()
     severe = burdened.fillna(False).astype(bool)
     raised = (
-        (phq9_sum.ge(SYMPTOM_MODERATE_FROM) | gad7_sum.ge(SYMPTOM_MODERATE_FROM))
+        (phq9_sum.ge(SYMPTOM_MEDIUM_FROM) | gad7_sum.ge(SYMPTOM_MEDIUM_FROM))
         .fillna(False)
         .astype(bool)
     )
     labels = pd.Series(pd.NA, index=burdened.index, dtype=object)
     labels[determined] = "mildnone"
-    labels[determined & raised] = "moderate"
+    labels[determined & raised] = "medium"
     labels[severe] = "severe"
     return labels.astype(SYMPTOM_CATEGORY_DTYPE)
 
@@ -328,9 +333,10 @@ def yes_no(df: pd.DataFrame, spec: QuestionnaireSpec, code: str) -> pd.Series:
 def any_selected(df: pd.DataFrame, spec: QuestionnaireSpec, group: str) -> pd.Series:
     """Whether any option of a multi-select question is selected; never ``NA``.
 
-    The question's ``none_option`` (if the spec names one) does not count. Empty
-    option cells are not selected (D12). An optional option column absent from the
-    responses counts as not selected for everyone; an absent required option is an
+    The question's ``none_option`` (if the spec names one) does not count; a filled
+    "other" text of the question counts as a selected option (:func:`other_given`).
+    Empty option cells are not selected (D12). An optional option column absent from
+    the responses counts as not selected for everyone; an absent required option is an
     input error.
     """
     selected = pd.Series(False, index=df.index, dtype=pd.BooleanDtype())
@@ -338,6 +344,9 @@ def any_selected(df: pd.DataFrame, spec: QuestionnaireSpec, group: str) -> pd.Se
         if option.none_option:
             continue
         selected = selected | option_selected(df, option)
+    other = spec.other_text(group)
+    if other is not None:
+        selected = selected | other_given(df, other)
     return selected
 
 
@@ -352,6 +361,20 @@ def option_selected(df: pd.DataFrame, option: Question) -> pd.Series:
         return pd.Series(False, index=df.index, dtype=pd.BooleanDtype())
     ticked = _string_column(df, option.code).eq(option.selected).fillna(False)
     return ticked.astype(pd.BooleanDtype())
+
+
+def other_given(df: pd.DataFrame, column: Question) -> pd.Series:
+    """Whether a free-text "other" column is filled: ``True`` or ``False``, not ``NA``.
+
+    The survey has no option column for "other": a pupil who chooses it has to type a
+    text, so a filled column means "other" was chosen (ADR 0004). Only whether the
+    cell holds more than whitespace is used, never the text (D14). An optional column
+    absent from the responses counts as not filled.
+    """
+    if column.code not in df.columns and not column.required:
+        return pd.Series(False, index=df.index, dtype=pd.BooleanDtype())
+    filled = _string_column(df, column.code).str.strip().ne("").fillna(False)
+    return filled.astype(pd.BooleanDtype())
 
 
 # --- input access ---------------------------------------------------------------------
