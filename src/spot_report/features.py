@@ -41,13 +41,13 @@ Feature columns (a contract for the metric domains)
     because then it cannot be determined.
 ``symptom_category`` (ordered ``category``)
     Combined symptom load, categories :data:`SYMPTOM_CATEGORIES` ``mildnone`` <
-    ``moderate`` < ``severe``, from the two sums in three-valued logic: ``severe`` if
+    ``medium`` < ``severe``, from the two sums in three-valued logic: ``severe`` if
     at least one score is at or above 10 (``burdened`` is ``True``, even if the other
-    score is missing); otherwise, if both scores are present, ``moderate`` if at least
-    one is at or above :data:`SYMPTOM_MODERATE_FROM` (5) and ``mildnone`` if both are
+    score is missing); otherwise, if both scores are present, ``medium`` if at least
+    one is at or above :data:`SYMPTOM_MEDIUM_FROM` (5) and ``mildnone`` if both are
     below it; ``NA`` when ``burdened`` is ``NA``, because a missing score could be 10
-    or more. (The names are those of the previous program; ``moderate`` here is the
-    5-9 band, not the PHQ-9 band ``moderate``.)
+    or more. (``medium`` is the previous program's ``moderate``, renamed so that it
+    cannot be mistaken for the PHQ-9/GAD-7 band ``moderate``, 10-14; ADR 0004.)
 ``phq9_item9`` (``Int64``)
     The ninth PHQ-9 item (the ninth column of the scale in the spec), passed through.
 ``impairment`` (``Int64``)
@@ -101,7 +101,7 @@ __all__ = [
     "PHQ9_SEVERITY_DTYPE",
     "SYMPTOM_CATEGORIES",
     "SYMPTOM_CATEGORY_DTYPE",
-    "SYMPTOM_MODERATE_FROM",
+    "SYMPTOM_MEDIUM_FROM",
     "FeatureInputError",
     "any_selected",
     "compute_features",
@@ -132,8 +132,8 @@ PHQ9_CUTOFF = 10
 GAD7_CUTOFF = 10
 
 #: Lowest score of the "mild" band of both scales (5-9); the lower bound of the
-#: ``moderate`` symptom category.
-SYMPTOM_MODERATE_FROM = 5
+#: ``medium`` symptom category.
+SYMPTOM_MEDIUM_FROM = 5
 
 #: Severity bands as (category code, lowest score of the band), in ascending order.
 #: The codes are stored as ``Distribution`` categories; never rename them.
@@ -155,7 +155,7 @@ PHQ9_SEVERITY_CATEGORIES: tuple[str, ...] = tuple(c for c, _ in PHQ9_SEVERITY_BA
 GAD7_SEVERITY_CATEGORIES: tuple[str, ...] = tuple(c for c, _ in GAD7_SEVERITY_BANDS)
 #: Categories of ``symptom_category``, lowest load first. Stored (metric ids and
 #: ``Distribution`` categories of the association domain); never rename them.
-SYMPTOM_CATEGORIES: tuple[str, ...] = ("mildnone", "moderate", "severe")
+SYMPTOM_CATEGORIES: tuple[str, ...] = ("mildnone", "medium", "severe")
 SYMPTOM_CATEGORY_DTYPE = pd.CategoricalDtype(list(SYMPTOM_CATEGORIES), ordered=True)
 PHQ9_SEVERITY_DTYPE = pd.CategoricalDtype(list(PHQ9_SEVERITY_CATEGORIES), ordered=True)
 GAD7_SEVERITY_DTYPE = pd.CategoricalDtype(list(GAD7_SEVERITY_CATEGORIES), ordered=True)
@@ -302,19 +302,19 @@ def symptom_category(
     """The symptom category of each respondent; ``NA`` where the scores do not decide.
 
     ``severe`` where ``burdened`` is ``True``. Where it is ``False`` both scores are
-    present and below 10, so ``moderate`` (a score of 5 or more) and ``mildnone`` are
+    present and below 10, so ``medium`` (a score of 5 or more) and ``mildnone`` are
     exact. Where it is ``NA`` a missing score could still be 10 or more: ``NA``.
     """
     determined = burdened.notna()
     severe = burdened.fillna(False).astype(bool)
     raised = (
-        (phq9_sum.ge(SYMPTOM_MODERATE_FROM) | gad7_sum.ge(SYMPTOM_MODERATE_FROM))
+        (phq9_sum.ge(SYMPTOM_MEDIUM_FROM) | gad7_sum.ge(SYMPTOM_MEDIUM_FROM))
         .fillna(False)
         .astype(bool)
     )
     labels = pd.Series(pd.NA, index=burdened.index, dtype=object)
     labels[determined] = "mildnone"
-    labels[determined & raised] = "moderate"
+    labels[determined & raised] = "medium"
     labels[severe] = "severe"
     return labels.astype(SYMPTOM_CATEGORY_DTYPE)
 

@@ -662,7 +662,7 @@ dtypes), following D12:
 | `phq9_severity`, `gad7_severity` | ordered `category` | standard bands (PHQ-9 `minimal` 0–4, `mild` 5–9, `moderate` 10–14, `moderately_severe` 15–19, `severe` 20–27; GAD-7 the same up to `severe` 15–21); sum `NA` |
 | `phq9_cutoff`, `gad7_cutoff` | `boolean` | sum ≥ 10; sum `NA` |
 | `burdened` | `boolean` | PHQ-9 or GAD-7 cut-off, three-valued: `True` if one cut-off is `True`, `False` only if both are `False`; `NA` otherwise |
-| `symptom_category` | ordered `category` | combined symptom load, `mildnone` < `moderate` < `severe`: `severe` if PHQ-9 or GAD-7 ≥ 10 (even if the other score is missing); else, with both scores present, `moderate` if one is ≥ 5 and `mildnone` if both are < 5; `NA` where `burdened` is `NA` (a missing score could be ≥ 10) |
+| `symptom_category` | ordered `category` | combined symptom load, `mildnone` < `medium` < `severe`: `severe` if PHQ-9 or GAD-7 ≥ 10 (even if the other score is missing); else, with both scores present, `medium` if one is ≥ 5 and `mildnone` if both are < 5; `NA` where `burdened` is `NA` (a missing score could be ≥ 10) |
 | `phq9_item9`, `impairment` | `Int64` | PHQ-9 item 9 and `SIPHQ`, passed through; empty |
 | `diagnosis` | `boolean` | `DIAGQ0` is the yes code; empty |
 | `treatment_any` | `boolean` | any `DIAGQ3` option except the none option selected; never `NA` (empty option = not selected) |

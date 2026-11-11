@@ -176,7 +176,7 @@ def test_columns_and_dtypes_follow_the_contract() -> None:
         == SYMPTOM_CATEGORIES
         == (
             "mildnone",
-            "moderate",
+            "medium",
             "severe",
         )
     )
@@ -339,9 +339,9 @@ def test_burdened_truth_table(
 SYMPTOM_CATEGORY_TABLE = [
     (0, 0, "mildnone"),
     (4, 4, "mildnone"),
-    (5, 0, "moderate"),
-    (0, 5, "moderate"),
-    (9, 9, "moderate"),
+    (5, 0, "medium"),
+    (0, 5, "medium"),
+    (9, 9, "medium"),
     (10, 0, "severe"),
     (0, 10, "severe"),
     (27, 21, "severe"),
